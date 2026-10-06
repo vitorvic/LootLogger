@@ -8,8 +8,9 @@
         WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/Assets/icon.ico"
         Background="{StaticResource BgBrush}" Foreground="{StaticResource FgBrush}"
-        FontFamily="{StaticResource InterFont}" FontSize="13"
-        TextOptions.TextFormattingMode="Display"
+        FontFamily="{StaticResource AppFont}" FontSize="13"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="ClearType"
         WindowStyle="None" ResizeMode="CanResize"
         UseLayoutRounding="True">
     <WindowChrome.WindowChrome>

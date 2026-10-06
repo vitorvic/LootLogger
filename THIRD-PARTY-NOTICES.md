@@ -4,6 +4,6 @@
 - **SharpPcap**, MIT. https://github.com/dotpcap/sharppcap
 - **PacketDotNet**, MPL-2.0. https://github.com/dotpcap/packetnet
 - **CommunityToolkit.Mvvm**, MIT. https://github.com/CommunityToolkit/dotnet
-- **Inter** (fonte), SIL Open Font License 1.1. Texto em `src/LootLogger.App/Assets/Fonts/Inter-OFL.txt`. https://rsms.me/inter
+- **Geist** (fonte, Vercel), SIL Open Font License 1.1. Texto em `src/LootLogger.App/Assets/Fonts/Geist-OFL.txt`. https://github.com/vercel/geist-font
 - **ao-bin-dumps** (broderickhyman), lista de itens e mapas do jogo. https://github.com/broderickhyman/ao-bin-dumps
 - **Npcap** não vem junto com o programa; cada usuário instala pelo site oficial. https://npcap.com

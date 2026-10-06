@@ -127,7 +127,7 @@ internal static class Strings
         ["AboutMadeBy"] = "Feito por Vitor. Só lê o tráfego do jogo; não altera o cliente nem joga por você.",
         ["AboutFanProject"] = "Projeto de fã, sem vínculo com a Sandbox Interactive GmbH. Albion Online é marca da Sandbox Interactive.",
         ["AboutLicense"] = "Código aberto sob a licença GPL-3.0.",
-        ["AboutCredits"] = "Usa partes do AlbionOnline-StatisticsAnalysis (Triky313, GPL-3.0), SharpPcap, PacketDotNet, CommunityToolkit.Mvvm, a fonte Inter e a lista de itens do ao-bin-dumps.",
+        ["AboutCredits"] = "Usa partes do AlbionOnline-StatisticsAnalysis (Triky313, GPL-3.0), SharpPcap, PacketDotNet, CommunityToolkit.Mvvm, a fonte Geist e a lista de itens do ao-bin-dumps.",
         ["Version"] = "versão {0}",
 
         // News / help
@@ -262,7 +262,7 @@ internal static class Strings
         ["AboutMadeBy"] = "Made by Vitor. It only reads the game traffic; it does not change the client or play for you.",
         ["AboutFanProject"] = "Fan project, not affiliated with Sandbox Interactive GmbH. Albion Online is a trademark of Sandbox Interactive.",
         ["AboutLicense"] = "Open source under the GPL-3.0 license.",
-        ["AboutCredits"] = "Uses parts of AlbionOnline-StatisticsAnalysis (Triky313, GPL-3.0), SharpPcap, PacketDotNet, CommunityToolkit.Mvvm, the Inter font and the ao-bin-dumps item list.",
+        ["AboutCredits"] = "Uses parts of AlbionOnline-StatisticsAnalysis (Triky313, GPL-3.0), SharpPcap, PacketDotNet, CommunityToolkit.Mvvm, the Geist font and the ao-bin-dumps item list.",
         ["Version"] = "version {0}",
 
         ["NewsBody"] = "First version: live capture, Loot Log, CSV export in the format guilds already use, Chest Check, Combat, Party mode and Portuguese/English.",

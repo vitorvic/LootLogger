@@ -1,0 +1,52 @@
+# LootLogger
+
+Loot logger para Albion Online, para qualquer jogador ou guild. Lê o tráfego de rede do jogo (só leitura, não mexe no cliente) e mostra quem pegou o quê, de quem, em qual mapa e quando.
+
+## O que faz
+
+- **Painel**: iniciar/parar captura, itens capturados, última hora, tempo ativo, valor estimado e eventos recentes.
+- **Loot Log**: tabela com busca e filtro por guild.
+- **Comparar Baú**: cole o log do baú da guild e veja quem ainda não depositou.
+- **Combate**: mortes, quem matou e o que foi perdido.
+- **Configurações**: Modo Party, iniciar com o Windows, português/inglês, placa de rede, pasta dos exportados.
+- **Exportar CSV** no mesmo formato que as guilds já usam. Cada sessão também é salva sozinha, linha por linha.
+
+## Requisitos
+
+- Windows 10 ou 11.
+- [Npcap](https://npcap.com/#download) instalado (é o que permite ler o tráfego do jogo).
+- Para compilar: Visual Studio 2026 Community com a carga ".NET desktop development" (.NET 10).
+
+## Como rodar pelo código
+
+1. Abra `LootLogger.slnx` no Visual Studio.
+2. Escolha `LootLogger.App` como projeto de inicialização.
+3. Aperte F5.
+
+Testes: `dotnet test` na pasta do projeto.
+
+## Onde ficam os arquivos
+
+- Configurações, lista de itens e gravações: `%AppData%\LootLogger`
+- Sessões exportadas: `Documentos\LootLogger\Sessões` (dá para trocar em Configurações)
+- Erros inesperados: `%AppData%\LootLogger\erros.log`
+
+## Quando o jogo atualizar
+
+Os códigos de rede do Albion mudam às vezes depois de um patch. Se o programa parar de registrar loot, os códigos podem ser ajustados sem recompilar em `%AppData%\LootLogger\codes.json` (é criado na primeira vez que o programa abre).
+
+## Estrutura
+
+| Pasta | O que tem |
+|---|---|
+| `src/LootLogger.Protocol` | Leitura do protocolo Photon do jogo |
+| `src/LootLogger.Capture` | Captura de pacotes com Npcap |
+| `src/LootLogger.Core` | Regras do loot, CSV, Comparar Baú, lista de itens |
+| `src/LootLogger.App` | O programa (WPF) |
+| `tests/LootLogger.Core.Tests` | Testes |
+
+## Licença
+
+GPL-3.0. Veja [LICENSE](LICENSE) e [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Projeto de fã, sem vínculo com a Sandbox Interactive GmbH. Albion Online é marca da Sandbox Interactive.

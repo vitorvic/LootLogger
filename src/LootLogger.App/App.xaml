@@ -1,9 +1,17 @@
-﻿<Application x:Class="LootLogger.App.App"
+<Application x:Class="LootLogger.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:LootLogger.App"
-             StartupUri="MainWindow.xaml">
+             xmlns:v="clr-namespace:LootLogger.App.Views"
+             ShutdownMode="OnMainWindowClose">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Theme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <v:EqualsConverter x:Key="Equals" />
+            <v:InverseBoolConverter x:Key="Not" />
+            <v:FalseToVisibleConverter x:Key="FalseToVisible" />
+            <v:TextToVisibleConverter x:Key="TextToVisible" />
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

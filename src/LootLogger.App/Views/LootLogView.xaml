@@ -1,0 +1,85 @@
+<UserControl x:Class="LootLogger.App.Views.LootLogView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:LootLogger.App.Localization">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavLootLog}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Grid Width="220" Margin="0,0,8,0">
+                    <TextBox x:Name="Search" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="{l:T SearchHint}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Visibility="{Binding Text, ElementName=Search, Converter={StaticResource FalseToVisible}}" />
+                </Grid>
+                <ComboBox ItemsSource="{Binding Guilds}" SelectedIndex="{Binding SelectedGuildIndex}" Margin="0,0,8,0" />
+                <Button Content="{l:T ExportCsv}" Command="{Binding ExportCsvCommand}" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,14,0,0">
+            <DockPanel Grid.IsSharedSizeScope="True">
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Padding="10,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="72" />
+                            <ColumnDefinition Width="1.3*" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="44" />
+                            <ColumnDefinition Width="1.3*" />
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="90" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource ColumnHeader}" Text="{l:T ColTime}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource ColumnHeader}" Text="{l:T ColLootedBy}" />
+                        <TextBlock Grid.Column="2" Style="{StaticResource ColumnHeader}" Text="{l:T ColItem}" />
+                        <TextBlock Grid.Column="3" Style="{StaticResource ColumnHeader}" Text="{l:T ColQty}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4" Style="{StaticResource ColumnHeader}" Text="{l:T ColLootedFrom}" Margin="12,0,0,0" />
+                        <TextBlock Grid.Column="5" Style="{StaticResource ColumnHeader}" Text="{l:T ColMap}" />
+                        <TextBlock Grid.Column="6" Style="{StaticResource ColumnHeader}" Text="{l:T ColValue}" HorizontalAlignment="Right" />
+                    </Grid>
+                </Border>
+                <ListBox Style="{StaticResource RowList}" ItemsSource="{Binding LootView}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="72" />
+                                    <ColumnDefinition Width="1.3*" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="44" />
+                                    <ColumnDefinition Width="1.3*" />
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="90" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Time}" Foreground="{StaticResource MutedBrush}" />
+                                <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis" Margin="0,0,8,0">
+                                    <Run Text="{Binding LootedBy, Mode=OneWay}" /> <Run Text="{Binding LootedByGuild, Mode=OneWay}" Foreground="{StaticResource MutedBrush}" />
+                                </TextBlock>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,8,0">
+                                    <Border Style="{StaticResource TierChip}">
+                                        <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="{StaticResource GoldBrush}" />
+                                    </Border>
+                                    <TextBlock Text="{Binding ItemName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="3" Text="{Binding Quantity}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="4" TextTrimming="CharacterEllipsis" Margin="12,0,8,0">
+                                    <Run Text="{Binding LootedFrom, Mode=OneWay}" /> <Run Text="{Binding LootedFromGuild, Mode=OneWay}" Foreground="{StaticResource MutedBrush}" />
+                                </TextBlock>
+                                <TextBlock Grid.Column="5" Text="{Binding Map}" TextTrimming="CharacterEllipsis" Foreground="{StaticResource MutedBrush}" />
+                                <TextBlock Grid.Column="6" Text="{Binding Value}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <TextBlock Grid.Row="2" Style="{StaticResource Muted}" Margin="2,8,0,0" Text="{Binding LootSummary}" />
+    </Grid>
+</UserControl>

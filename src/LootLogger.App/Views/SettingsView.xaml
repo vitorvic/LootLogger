@@ -1,0 +1,115 @@
+<UserControl x:Class="LootLogger.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:LootLogger.App.Localization">
+    <UserControl.Resources>
+        <!-- One setting per line: text on the left, control on the right. -->
+        <Style x:Key="SettingLine" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{StaticResource RowLineBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="Padding" Value="0,12" />
+        </Style>
+        <Style x:Key="SettingName" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="SettingHelp" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,24,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Style="{StaticResource PageTitle}" Text="{l:T NavSettings}" />
+        <ScrollViewer Margin="0,14,0,0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel Margin="16,0">
+                        <Border Style="{StaticResource SettingLine}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding PartyOnly}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T PartyMode}" />
+                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T PartyModeHelp}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingLine}">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding StartWithWindows}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T StartWithWindows}" />
+                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T StartWithWindowsHelp}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingLine}">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Right" VerticalAlignment="Center" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource SegmentButton}" GroupName="Language" Content="Português" IsChecked="{Binding IsPortuguese}" />
+                                        <RadioButton Style="{StaticResource SegmentButton}" GroupName="Language" Content="English" IsChecked="{Binding IsPortuguese, Converter={StaticResource Not}}" />
+                                    </StackPanel>
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T Language}" />
+                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T LanguageHelp}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingLine}">
+                            <DockPanel>
+                                <ComboBox DockPanel.Dock="Right" Width="240" VerticalAlignment="Center"
+                                          ItemsSource="{Binding Adapters}" SelectedItem="{Binding SelectedAdapter}" DisplayMemberPath="Name" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T Adapter}" />
+                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T AdapterHelp}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingLine}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="{l:T Change}" Command="{Binding ChangeExportFolderCommand}" Margin="0,0,8,0" />
+                                    <Button Content="{l:T OpenFolder}" Command="{Binding OpenExportFolderCommand}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T ExportFolder}" />
+                                    <TextBlock Style="{StaticResource SettingHelp}" FontFamily="{StaticResource MonoFont}" FontSize="11.5"
+                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="{Binding ExportFolder}" ToolTip="{Binding ExportFolder}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingLine}" BorderThickness="0">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" VerticalAlignment="Center" Content="{l:T UpdateNow}" Command="{Binding UpdateItemsCommand}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T ItemList}" />
+                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{Binding ItemListText}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Style="{StaticResource Label}" Margin="2,18,0,8" Text="{l:T Advanced}" />
+                <Border Style="{StaticResource Card}">
+                    <StackPanel Margin="16,0">
+                        <Border Style="{StaticResource SettingLine}" BorderThickness="0">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding RecordCapture}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T RecordCapture}" />
+                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T RecordCaptureHelp}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <Button Content="{l:T ReplayRecording}" Command="{Binding ReplayRecordingCommand}" Margin="0,0,8,0" />
+                                        <Button Content="{l:T OpenDataFolder}" Command="{Binding OpenDataFolderCommand}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

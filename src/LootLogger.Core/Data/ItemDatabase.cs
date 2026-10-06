@@ -45,10 +45,13 @@ public sealed class ItemDatabase
 
     private Dictionary<int, ItemInfo> _byIndex = new();
     private Dictionary<string, List<ItemInfo>> _byName = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, ItemInfo> _byUniqueName = new(StringComparer.OrdinalIgnoreCase);
 
     public int Count => _byIndex.Count;
 
     public ItemInfo? Get(int index) => _byIndex.GetValueOrDefault(index);
+
+    public ItemInfo? GetByUniqueName(string uniqueName) => _byUniqueName.GetValueOrDefault(uniqueName);
 
     /// <summary>Finds an item by the name the game shows (English or Portuguese) and its enchantment.</summary>
     public ItemInfo? FindByName(string localizedName, int enchantment)
@@ -159,15 +162,18 @@ public sealed class ItemDatabase
     {
         var byIndex = new Dictionary<int, ItemInfo>();
         var byName = new Dictionary<string, List<ItemInfo>>(StringComparer.OrdinalIgnoreCase);
+        var byUniqueName = new Dictionary<string, ItemInfo>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in items)
         {
             byIndex[item.Index] = item;
+            byUniqueName.TryAdd(item.UniqueName, item);
             AddName(byName, item.EnglishName, item);
             AddName(byName, item.PortugueseName, item);
         }
 
         _byIndex = byIndex;
         _byName = byName;
+        _byUniqueName = byUniqueName;
     }
 
     private static void AddName(Dictionary<string, List<ItemInfo>> map, string name, ItemInfo item)

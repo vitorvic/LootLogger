@@ -1,0 +1,161 @@
+<UserControl x:Class="LootLogger.App.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:LootLogger.App.Localization">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title and identification -->
+        <DockPanel Grid.Row="0">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavDashboard}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Border Margin="0,0,8,0">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource Chip}">
+                            <Setter Property="BorderBrush" Value="{StaticResource GoldDimBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPlayerIdentified}" Value="True">
+                                    <Setter Property="BorderBrush" Value="{StaticResource BlueDimBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding PlayerText}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource ChipText}">
+                                <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlayerIdentified}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource BlueBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+                <Border Style="{StaticResource Chip}" BorderBrush="{StaticResource GreenDimBrush}"
+                        Visibility="{Binding IsPlayerIdentified, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Style="{StaticResource ChipText}" Foreground="{StaticResource GreenBrush}" Text="{Binding PartyText}" />
+                </Border>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Npcap missing -->
+        <Border Grid.Row="1" Margin="0,14,0,0" Style="{StaticResource Card}" BorderBrush="{StaticResource GoldDimBrush}" Padding="14,12"
+                Visibility="{Binding NpcapMissing, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Style="{StaticResource GoButton}" Content="{l:T NpcapDownload}" Command="{Binding DownloadNpcapCommand}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                <StackPanel>
+                    <TextBlock Text="{l:T NpcapMissingTitle}" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
+                    <TextBlock Style="{StaticResource Muted}" Text="{l:T NpcapMissingText}" Margin="0,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Controls -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,14,0,0">
+            <Button Command="{Binding ToggleCaptureCommand}" Margin="0,0,10,0" MinWidth="150">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource GoButton}">
+                        <Setter Property="Content" Value="{l:T StartCapture}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                                <Setter Property="Content" Value="{l:T StopCapture}" />
+                                <Setter Property="Background" Value="{StaticResource CardBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource RedDimBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource RedBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Content="{l:T ExportCsv}" Command="{Binding ExportCsvCommand}" Margin="0,0,10,0" />
+            <Button Content="{l:T NewSession}" Command="{Binding NewSessionCommand}" />
+        </StackPanel>
+
+        <!-- Tiles -->
+        <UniformGrid Grid.Row="3" Columns="4" Margin="0,14,0,0">
+            <Border Style="{StaticResource Tile}" Margin="0,0,5,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileItems}" />
+                    <TextBlock Style="{StaticResource TileValue}" Text="{Binding TotalItems}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Tile}" Margin="5,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileLastHour}" />
+                    <TextBlock Style="{StaticResource TileValue}" Text="{Binding LastHourItems}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Tile}" Margin="5,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileActive}" />
+                    <TextBlock Style="{StaticResource TileValue}">
+                        <Run Text="{Binding ActiveTime, Mode=OneWay}" /><Run Text="{Binding ActiveSeconds, Mode=OneWay}" FontSize="14" FontWeight="Medium" Foreground="{StaticResource MutedBrush}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Tile}" Margin="5,0,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileValue}" />
+                    <TextBlock Style="{StaticResource TileValue}">
+                        <Run Text="{Binding TotalValue, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding TotalValueUnit, Mode=OneWay}" FontSize="14" FontWeight="Medium" Foreground="{StaticResource MutedBrush}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- Recent events -->
+        <Border Grid.Row="4" Style="{StaticResource Card}" Margin="0,14,0,0">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource CardHeaderText}" Text="{Binding ClusterName}" />
+                        <TextBlock Style="{StaticResource CardHeaderText}" Text="{l:T RecentEvents}" />
+                    </DockPanel>
+                </Border>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="12,10,12,4" Text="{l:T NoEventsYet}"
+                               Visibility="{Binding HasFeed, Converter={StaticResource FalseToVisible}}" />
+                    <ListBox Style="{StaticResource RowList}" ItemsSource="{Binding Feed}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Time}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsKill}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource RedBrush}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsInfo}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                        <Run Text="{Binding Who, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="{Binding Middle, Mode=OneWay}" /><Run Text="{Binding Highlight, Mode=OneWay}" Foreground="{StaticResource GoldBrush}" /><Run Text="{Binding Suffix, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <TextBlock Grid.Column="2" Text="{Binding Value}" Foreground="{StaticResource MutedBrush}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

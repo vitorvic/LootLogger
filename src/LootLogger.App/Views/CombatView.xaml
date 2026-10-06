@@ -1,0 +1,84 @@
+<UserControl x:Class="LootLogger.App.Views.CombatView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:LootLogger.App.Localization">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavCombat}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <TextBlock Text="{l:T OnlyMyGuild}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <CheckBox Style="{StaticResource Toggle}" IsChecked="{Binding OnlyMyGuild}" />
+            </StackPanel>
+        </DockPanel>
+
+        <UniformGrid Grid.Row="1" Columns="4" Margin="0,14,0,0">
+            <Border Style="{StaticResource Tile}" Margin="0,0,5,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileKills}" />
+                    <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource GreenBrush}" Text="{Binding Kills}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Tile}" Margin="5,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileDeaths}" />
+                    <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource RedBrush}" Text="{Binding Deaths}" />
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,14,0,0">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Padding="10,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="72" />
+                            <ColumnDefinition Width="1.3*" />
+                            <ColumnDefinition Width="1.3*" />
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="90" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource ColumnHeader}" Text="{l:T ColTime}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource ColumnHeader}" Text="{l:T ColDied}" />
+                        <TextBlock Grid.Column="2" Style="{StaticResource ColumnHeader}" Text="{l:T ColKiller}" />
+                        <TextBlock Grid.Column="3" Style="{StaticResource ColumnHeader}" Text="{l:T ColMap}" />
+                        <TextBlock Grid.Column="4" Style="{StaticResource ColumnHeader}" Text="{l:T ColLost}" />
+                        <TextBlock Grid.Column="5" Style="{StaticResource ColumnHeader}" Text="{l:T ColValue}" HorizontalAlignment="Right" />
+                    </Grid>
+                </Border>
+                <ListBox Style="{StaticResource RowList}" ItemsSource="{Binding CombatView}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="72" />
+                                    <ColumnDefinition Width="1.3*" />
+                                    <ColumnDefinition Width="1.3*" />
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="90" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Time}" Foreground="{StaticResource MutedBrush}" />
+                                <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis" Margin="0,0,8,0">
+                                    <Run Text="{Binding Died, Mode=OneWay}" Foreground="{StaticResource RedBrush}" FontWeight="SemiBold" /> <Run Text="{Binding DiedGuild, Mode=OneWay}" Foreground="{StaticResource MutedBrush}" />
+                                </TextBlock>
+                                <TextBlock Grid.Column="2" TextTrimming="CharacterEllipsis" Margin="0,0,8,0">
+                                    <Run Text="{Binding Killer, Mode=OneWay}" FontWeight="SemiBold" /> <Run Text="{Binding KillerGuild, Mode=OneWay}" Foreground="{StaticResource MutedBrush}" />
+                                </TextBlock>
+                                <TextBlock Grid.Column="3" Text="{Binding Map}" TextTrimming="CharacterEllipsis" Foreground="{StaticResource MutedBrush}" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="4" Text="{Binding Lost}" ToolTip="{Binding Lost}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="5" Text="{Binding LostValueText}" HorizontalAlignment="Right" Foreground="{StaticResource GoldBrush}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -64,7 +64,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         Loc.Instance.PropertyChanged += (_, _) => Relocalize();
 
-        NpcapMissing = !CaptureService.IsNpcapInstalled();
+        NpcapMissing = CaptureService.NeedsNpcap(_settings.AdapterId) && !CaptureService.IsNpcapInstalled();
         LoadSettingsState();
         AddInfo("FeedSessionStarted");
 
@@ -159,7 +159,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        NpcapMissing = !CaptureService.IsNpcapInstalled();
+        NpcapMissing = CaptureService.NeedsNpcap(_settings.AdapterId) && !CaptureService.IsNpcapInstalled();
         if (NpcapMissing)
         {
             Page = Page.Dashboard;

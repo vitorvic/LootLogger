@@ -26,6 +26,17 @@ public class CaptureTests
     }
 
     [Fact]
+    public void RawSocketFilter_KeepsGamePortsAndFragmentsOnly()
+    {
+        Assert.True(RawSocketCapture.IsGamePacket(Ipv4Fragments(Udp(5056, 61000, [1, 2, 3]), maxFragmentData: 4000).Single()));
+        Assert.True(RawSocketCapture.IsGamePacket(Ipv4Fragments(Udp(61000, 5055, [1, 2, 3]), maxFragmentData: 4000).Single()));
+        Assert.False(RawSocketCapture.IsGamePacket(Ipv4Fragments(Udp(443, 61000, [1, 2, 3]), maxFragmentData: 4000).Single()));
+
+        var fragments = Ipv4Fragments(Udp(5056, 61000, new byte[3000]), maxFragmentData: 1480);
+        Assert.All(fragments, f => Assert.True(RawSocketCapture.IsGamePacket(f)));
+    }
+
+    [Fact]
     public void Extract_ReassemblesIpFragmentsInAnyOrder()
     {
         var payload = Enumerable.Range(0, 3000).Select(i => (byte) (i % 251)).ToArray();

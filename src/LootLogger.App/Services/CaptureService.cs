@@ -51,6 +51,9 @@ public sealed class CaptureService : IDisposable
 
     public static bool IsNpcapInstalled() => PacketCapture.IsDriverAvailable(out _);
 
+    /// <summary>Npcap is only needed for a chosen adapter, or when not running as administrator.</summary>
+    public static bool NeedsNpcap(string? adapterId) => adapterId is not null || !PacketCapture.CanUseRawSockets;
+
     public static IReadOnlyList<NetworkAdapter> ListAdapters()
     {
         try

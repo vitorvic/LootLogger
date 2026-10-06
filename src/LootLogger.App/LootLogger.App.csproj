@@ -11,6 +11,7 @@
     <AssemblyName>LootLogger</AssemblyName>
     <RootNamespace>LootLogger.App</RootNamespace>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>0.1.0</Version>
     <Product>LootLogger</Product>
     <Authors>Vitor</Authors>

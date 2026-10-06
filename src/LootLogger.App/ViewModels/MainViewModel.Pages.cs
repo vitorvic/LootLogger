@@ -333,6 +333,7 @@ public sealed partial class MainViewModel
         }
 
         SaveSetting(s => s.AdapterId = value.Id.Length == 0 ? null : value.Id);
+        NpcapMissing = CaptureService.NeedsNpcap(_settings.AdapterId) && !CaptureService.IsNpcapInstalled();
         if (IsCapturing)
         {
             StopCapture();

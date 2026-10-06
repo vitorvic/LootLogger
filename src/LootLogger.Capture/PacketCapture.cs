@@ -4,10 +4,15 @@ using SharpPcap.LibPcap;
 
 namespace LootLogger.Capture;
 
-public sealed record NetworkAdapter(string Id, string Name);
+public sealed record NetworkAdapter(string Id, string Name)
+{
+    public override string ToString() => Name;
+}
 
 /// <summary>
-/// Listens to the game's UDP traffic through Npcap and hands each payload to <see cref="PayloadReceived"/>.
+/// Listens to the game's UDP traffic and hands each payload to <see cref="PayloadReceived"/>.
+/// Automatic mode reads through Windows raw sockets when running as administrator (works with ExitLag
+/// and needs no driver); a specific adapter, or no admin rights, uses Npcap.
 /// Only reads; nothing is ever sent to the game or its servers.
 /// </summary>
 public sealed class PacketCapture : IDisposable
@@ -16,6 +21,7 @@ public sealed class PacketCapture : IDisposable
     public const string Filter = "(ip and ((udp and (port 5055 or port 5056 or port 5058)) or (ip[6:2] & 0x3fff != 0))) or (ip6 and udp and (port 5055 or port 5056 or port 5058))";
 
     private readonly List<LibPcapLiveDevice> _devices = [];
+    private readonly RawSocketCapture _sockets = new();
     private readonly UdpPayloadExtractor _extractor = new();
     private readonly Lock _lock = new();
     private CaptureFileWriterDevice? _recorder;
@@ -25,7 +31,10 @@ public sealed class PacketCapture : IDisposable
     /// <summary>Raised the first time game traffic is seen after starting.</summary>
     public event Action? GameTrafficDetected;
 
-    public bool IsRunning => _devices.Count > 0;
+    public bool IsRunning => _devices.Count > 0 || _sockets.IsRunning;
+
+    /// <summary>True when automatic mode can read without Npcap.</summary>
+    public static bool CanUseRawSockets => RawSocketCapture.IsAdministrator();
 
     private bool _trafficSeen;
 
@@ -59,6 +68,18 @@ public sealed class PacketCapture : IDisposable
     {
         Stop();
         _trafficSeen = false;
+
+        if (adapterId is null && CanUseRawSockets)
+        {
+            if (recordPath is not null)
+            {
+                _recorder = new CaptureFileWriterDevice(recordPath);
+                _recorder.Open(new DeviceConfiguration { LinkLayerType = LinkLayers.Raw });
+            }
+
+            _sockets.Start(data => Handle(new RawCapture(LinkLayers.Raw, new PosixTimeval(DateTime.UtcNow), data), isPrimaryLink: true));
+            return;
+        }
 
         var candidates = LibPcapLiveDeviceList.Instance
             .Where(d => !d.Loopback && (adapterId is null || d.Name == adapterId))
@@ -95,6 +116,7 @@ public sealed class PacketCapture : IDisposable
 
     public void Stop()
     {
+        _sockets.Stop();
         foreach (var device in _devices)
         {
             device.OnPacketArrival -= OnPacketArrival;
@@ -130,12 +152,19 @@ public sealed class PacketCapture : IDisposable
     private void OnPacketArrival(object sender, SharpPcap.PacketCapture e)
     {
         var raw = e.GetPacket();
+        Handle(raw, raw.LinkLayerType == _devices.FirstOrDefault()?.LinkType);
+    }
+
+    private void Handle(RawCapture raw, bool isPrimaryLink)
+    {
         byte[]? payload;
         lock (_lock)
         {
             // Several adapters may deliver at once; the extractor keeps fragment state, so serialize.
             payload = _extractor.Extract(raw.LinkLayerType, raw.Data, DateTime.UtcNow);
-            if (payload is not null && _recorder is not null && raw.LinkLayerType == _devices.FirstOrDefault()?.LinkType)
+
+            // Everything reaching here already passed the game filter, so fragments are kept too.
+            if (_recorder is not null && isPrimaryLink)
             {
                 _recorder.Write(raw);
             }

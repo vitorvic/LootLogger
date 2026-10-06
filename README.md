@@ -14,12 +14,13 @@ Loot logger para Albion Online, para qualquer jogador ou guild. Lê o tráfego d
 ## Requisitos
 
 - Windows 10 ou 11.
-- [Npcap](https://npcap.com/#download) instalado (é o que permite ler o tráfego do jogo).
+- Abrir como administrador (o Windows pergunta ao abrir). Assim ele lê o tráfego do jogo sozinho, inclusive com ExitLag.
+- [Npcap](https://npcap.com/#download) só é necessário se você escolher uma placa de rede específica em Configurações.
 - Para compilar: Visual Studio 2026 Community com a carga ".NET desktop development" (.NET 10).
 
 ## Como rodar pelo código
 
-1. Abra `LootLogger.slnx` no Visual Studio.
+1. Abra o Visual Studio (ou o PowerShell) como administrador e abra `LootLogger.slnx`.
 2. Escolha `LootLogger.App` como projeto de inicialização.
 3. Aperte F5.
 

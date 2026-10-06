@@ -1,0 +1,78 @@
+using System.Buffers.Binary;
+using LootLogger.Capture;
+using PacketDotNet;
+
+namespace LootLogger.Core.Tests;
+
+public class CaptureTests
+{
+    [Fact]
+    public void Extract_ReturnsPayloadForGamePort()
+    {
+        var payload = Enumerable.Range(0, 50).Select(i => (byte) i).ToArray();
+        var datagram = Udp(5056, 61000, payload);
+        var frames = Ipv4Fragments(datagram, maxFragmentData: 4000);
+
+        var result = new UdpPayloadExtractor().Extract(LinkLayers.Raw, frames.Single(), DateTime.UtcNow);
+
+        Assert.Equal(payload, result);
+    }
+
+    [Fact]
+    public void Extract_IgnoresOtherPorts()
+    {
+        var frames = Ipv4Fragments(Udp(443, 61000, [1, 2, 3]), maxFragmentData: 4000);
+        Assert.Null(new UdpPayloadExtractor().Extract(LinkLayers.Raw, frames.Single(), DateTime.UtcNow));
+    }
+
+    [Fact]
+    public void Extract_ReassemblesIpFragmentsInAnyOrder()
+    {
+        var payload = Enumerable.Range(0, 3000).Select(i => (byte) (i % 251)).ToArray();
+        var frames = Ipv4Fragments(Udp(5056, 61000, payload), maxFragmentData: 1200);
+        Assert.True(frames.Count > 2);
+
+        var extractor = new UdpPayloadExtractor();
+        byte[]? result = null;
+        foreach (var frame in frames.AsEnumerable().Reverse())
+        {
+            result ??= extractor.Extract(LinkLayers.Raw, frame, DateTime.UtcNow);
+        }
+
+        Assert.Equal(payload, result);
+    }
+
+    private static byte[] Udp(ushort src, ushort dst, byte[] payload)
+    {
+        var udp = new byte[8 + payload.Length];
+        BinaryPrimitives.WriteUInt16BigEndian(udp.AsSpan(0), src);
+        BinaryPrimitives.WriteUInt16BigEndian(udp.AsSpan(2), dst);
+        BinaryPrimitives.WriteUInt16BigEndian(udp.AsSpan(4), (ushort) udp.Length);
+        payload.CopyTo(udp, 8);
+        return udp;
+    }
+
+    // Raw IPv4 frames (no Ethernet header), split like a router would.
+    private static List<byte[]> Ipv4Fragments(byte[] datagram, int maxFragmentData)
+    {
+        var frames = new List<byte[]>();
+        for (var offset = 0; offset < datagram.Length; offset += maxFragmentData)
+        {
+            var length = Math.Min(maxFragmentData, datagram.Length - offset);
+            var more = offset + length < datagram.Length;
+            var frame = new byte[20 + length];
+            frame[0] = 0x45;
+            BinaryPrimitives.WriteUInt16BigEndian(frame.AsSpan(2), (ushort) frame.Length);
+            BinaryPrimitives.WriteUInt16BigEndian(frame.AsSpan(4), 0xBEEF);
+            BinaryPrimitives.WriteUInt16BigEndian(frame.AsSpan(6), (ushort) ((more ? 0x2000 : 0) | (offset / 8)));
+            frame[8] = 64;
+            frame[9] = 17;
+            frame[12] = 10; frame[15] = 2;
+            frame[16] = 5; frame[19] = 9;
+            datagram.AsSpan(offset, length).CopyTo(frame.AsSpan(20));
+            frames.Add(frame);
+        }
+
+        return frames;
+    }
+}

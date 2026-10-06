@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LootLogger.Protocol\LootLogger.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\Resources\items.tsv" LogicalName="LootLogger.items.tsv" />
+    <EmbeddedResource Include="Data\Resources\clusters.tsv" LogicalName="LootLogger.clusters.tsv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LootLogger.Core.Tests" />
+  </ItemGroup>
+
+</Project>

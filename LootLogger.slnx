@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LootLogger.App/LootLogger.App.csproj" />
+    <Project Path="src/LootLogger.Capture/LootLogger.Capture.csproj" />
+    <Project Path="src/LootLogger.Core/LootLogger.Core.csproj" />
+    <Project Path="src/LootLogger.Protocol/LootLogger.Protocol.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LootLogger.Core.Tests/LootLogger.Core.Tests.csproj" />
+  </Folder>
+</Solution>

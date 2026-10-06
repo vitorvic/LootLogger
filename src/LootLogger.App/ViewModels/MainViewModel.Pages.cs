@@ -289,6 +289,16 @@ public sealed partial class MainViewModel
         SaveSetting(s => s.PartyOnly = value);
     }
 
+    // Capture starts on its own, so restart it for the recording to begin or end right away.
+    partial void OnRecordCaptureChanged(bool value)
+    {
+        if (IsCapturing)
+        {
+            StopCapture();
+            StartCapture();
+        }
+    }
+
     partial void OnIsPortugueseChanged(bool value)
     {
         if (_loadingSettings)

@@ -263,8 +263,8 @@ public sealed class LootTracker
 
         AddLocalLoot(objectId.Value, body, notify);
 
-        // It now lives in our bag; later items can stack onto it.
-        container.SlotObjectIds.Remove(objectId.Value);
+        // It now lives in our bag; later items can stack onto it. Keep the slot so slot numbers still line up.
+        container.SlotObjectIds[container.SlotObjectIds.IndexOf(objectId.Value)] = 0;
     }
 
     // InventoryDeleteItem: 0 item object id. A bag item that vanished as one of our stacks grew was merged into it.

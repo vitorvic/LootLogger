@@ -243,6 +243,21 @@ public class LootTrackerTests
         Assert.Equal("XAgiota", Assert.Single(_loot).LootedFromName);
     }
 
+    [Fact]
+    public void WithoutExitLag_RequestsAndRepliesCountEachItemOnce()
+    {
+        Join();
+        Receive(PhotonPackets.Event(Codes.NewLoot, new() { [0] = 77L, [3] = "XAgiota" }));
+        OpenBag(77, (500, 105, 1), (501, 2204, 1));
+
+        Receive(PhotonPackets.Request(Codes.InventoryMoveItem, new() { [0] = 0, [1] = ContainerGuid.ToByteArray(), [4] = LocalInteract.ToByteArray() }));
+        Receive(PhotonPackets.Event(Codes.InventoryPutItem, new() { [0] = 500L, [2] = InventoryGuid.ToByteArray(), [3] = 2 }));
+        Receive(PhotonPackets.Request(Codes.InventoryMoveItem, new() { [0] = 1, [1] = ContainerGuid.ToByteArray(), [4] = LocalInteract.ToByteArray() }));
+        Receive(PhotonPackets.Event(Codes.InventoryPutItem, new() { [0] = 501L, [2] = InventoryGuid.ToByteArray(), [3] = 3 }));
+
+        Assert.Equal(["T3_FARM_CHICKEN_BABY", "T2_OFF_BOOK"], _loot.Select(l => l.ItemId));
+    }
+
     private void Join()
     {
         Receive(PhotonPackets.Response(Codes.Join, new()

@@ -14,8 +14,11 @@ public sealed class GameCodes
     public short NewCharacter { get; set; } = 29;
     public short NewEquipmentItem { get; set; } = 30;
     public short NewSimpleItem { get; set; } = 32;
+    public short InventoryPutItem { get; set; } = 26;
+    public short InventoryDeleteItem { get; set; } = 27;
     public short NewLoot { get; set; } = 98;
     public short AttachItemContainer { get; set; } = 99;
+    public short DetachItemContainer { get; set; } = 100;
     public short KilledPlayer { get; set; } = 164;
     public short Died { get; set; } = 165;
     public short PartyJoined { get; set; } = 231;
@@ -23,6 +26,7 @@ public sealed class GameCodes
     public short PartyPlayerJoined { get; set; } = 233;
     public short PartyPlayerLeft { get; set; } = 235;
     public short OtherGrabbedLoot { get; set; } = 279;
+    public short NewLootChest { get; set; } = 393;
 
     // Operations (parameter 253)
     public short Join { get; set; } = 2;

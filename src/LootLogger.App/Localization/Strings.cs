@@ -53,6 +53,7 @@ internal static class Strings
         ["Yes"] = "Sim",
         ["No"] = "Não",
         ["Mob"] = "monstro",
+        ["Chest"] = "baú",
         ["Million"] = "mi",
         ["Thousand"] = "mil",
 
@@ -192,6 +193,7 @@ internal static class Strings
         ["Yes"] = "Yes",
         ["No"] = "No",
         ["Mob"] = "monster",
+        ["Chest"] = "chest",
         ["Million"] = "M",
         ["Thousand"] = "k",
 

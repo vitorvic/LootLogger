@@ -10,8 +10,10 @@ namespace LootLogger.Core.Tracking;
 public sealed class LootTracker
 {
     public const string MobName = "MOB";
+    public const string ChestName = "CHEST";
 
     private static readonly TimeSpan DuplicateWindow = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan StackWindow = TimeSpan.FromSeconds(1);
 
     private readonly GameCodes _codes;
     private readonly ItemDatabase _items;
@@ -25,9 +27,11 @@ public sealed class LootTracker
     private readonly Dictionary<long, string> _bodies = new();
     private readonly Dictionary<long, DiscoveredItem> _discoveredItems = new();
     private readonly Dictionary<Guid, string> _party = new();
-    private readonly List<(DateTime Time, string Key)> _recentLoot = [];
+    private readonly List<(DateTime Time, string Key, bool IsLocal)> _recentLoot = [];
+    private readonly HashSet<long> _lootedItemObjects = [];
 
     private ItemContainer? _currentContainer;
+    private (int ItemIndex, DateTime Time)? _lastStackGrowth;
     private Guid? _localInteractGuid;
     private string _clusterIndex = string.Empty;
 
@@ -108,8 +112,20 @@ public sealed class LootTracker
             case MessageKind.Event when m.Code == _codes.NewLoot:
                 OnNewLoot(p);
                 break;
+            case MessageKind.Event when m.Code == _codes.NewLootChest:
+                OnNewLootChest(p);
+                break;
             case MessageKind.Event when m.Code == _codes.AttachItemContainer:
                 OnAttachContainer(p);
+                break;
+            case MessageKind.Event when m.Code == _codes.DetachItemContainer:
+                _currentContainer = null;
+                break;
+            case MessageKind.Event when m.Code == _codes.InventoryPutItem:
+                OnInventoryPut(p, notify);
+                break;
+            case MessageKind.Event when m.Code == _codes.InventoryDeleteItem:
+                OnInventoryDelete(p, notify);
                 break;
             case MessageKind.Event when m.Code == _codes.OtherGrabbedLoot:
                 OnOtherGrabbedLoot(p, notify);
@@ -143,7 +159,7 @@ public sealed class LootTracker
             return;
         }
 
-        ResetMapState();
+        // The new map's bodies and players arrive just before this response, so keep them.
         var player = new PlayerInfo(name, p.GetString(58) ?? string.Empty, p.GetString(79) ?? string.Empty) { Guid = p.GetGuid(1) };
         RememberPlayer(player, p.GetLong(0));
         _localInteractGuid = p.GetGuid(54);
@@ -202,7 +218,16 @@ public sealed class LootTracker
 
         var value = p.GetLong(4) ?? 0;
         _values.SetFromGame(itemIndex.Value, value);
-        _discoveredItems[objectId.Value] = new DiscoveredItem(itemIndex.Value, Math.Max(1, p.GetInt(2) ?? 1));
+        var quantity = Math.Max(1, p.GetInt(2) ?? 1);
+
+        // A stack outside the open bag growing is how a pickup that merges into the bag shows up.
+        if (_discoveredItems.TryGetValue(objectId.Value, out var known) && known.ItemIndex == itemIndex.Value && quantity > known.Quantity
+            && _currentContainer?.SlotObjectIds.Contains(objectId.Value) != true)
+        {
+            _lastStackGrowth = (itemIndex.Value, _utcNow());
+        }
+
+        _discoveredItems[objectId.Value] = new DiscoveredItem(itemIndex.Value, quantity);
     }
 
     // NewLoot: 0 object id of the bag, 3 name of whoever it belonged to.
@@ -214,6 +239,63 @@ public sealed class LootTracker
         {
             _bodies[objectId.Value] = body;
         }
+    }
+
+    // NewLootChest: 0 object id. Chests opened like bags (treasure coffers, dungeon chests).
+    private void OnNewLootChest(IReadOnlyDictionary<byte, object> p)
+    {
+        if (p.GetLong(0) is { } objectId)
+        {
+            _bodies[objectId] = ChestName;
+        }
+    }
+
+    // InventoryPutItem: 0 item object id, 1 slot, 2 container guid it went into.
+    // Seen for every pickup, unlike the player's own requests, which ExitLag routes out of sight.
+    private void OnInventoryPut(IReadOnlyDictionary<byte, object> p, List<Action> notify)
+    {
+        var objectId = p.GetLong(0);
+        if (objectId is null || !TryGetOpenLootBag(out var container, out var body) || p.GetGuid(2) == container.Guid
+            || !container.SlotObjectIds.Contains(objectId.Value))
+        {
+            return;
+        }
+
+        AddLocalLoot(objectId.Value, body, notify);
+
+        // It now lives in our bag; later items can stack onto it.
+        container.SlotObjectIds.Remove(objectId.Value);
+    }
+
+    // InventoryDeleteItem: 0 item object id. A bag item that vanished as one of our stacks grew was merged into it.
+    private void OnInventoryDelete(IReadOnlyDictionary<byte, object> p, List<Action> notify)
+    {
+        var objectId = p.GetLong(0);
+        if (objectId is null || !TryGetOpenLootBag(out var container, out var body) || !container.SlotObjectIds.Contains(objectId.Value)
+            || !_discoveredItems.TryGetValue(objectId.Value, out var item))
+        {
+            return;
+        }
+
+        if (_lastStackGrowth is { } growth && growth.ItemIndex == item.ItemIndex && _utcNow() - growth.Time <= StackWindow)
+        {
+            _lastStackGrowth = null;
+            AddLocalLoot(objectId.Value, body, notify);
+        }
+    }
+
+    private bool TryGetOpenLootBag(out ItemContainer container, out string body)
+    {
+        container = null!;
+        body = string.Empty;
+        if (LocalPlayer is null || _currentContainer is not { } current || !_bodies.TryGetValue(current.ObjectId, out var name))
+        {
+            return false;
+        }
+
+        container = current;
+        body = name;
+        return true;
     }
 
     // AttachItemContainer: 0 object id, 1 container guid, 3 item object id per slot.
@@ -361,15 +443,16 @@ public sealed class LootTracker
 
     private void AddLocalLoot(long itemObjectId, string body, List<Action> notify)
     {
-        if (LocalPlayer is null || !_discoveredItems.TryGetValue(itemObjectId, out var item))
+        // Several messages can report the same pickup; each item object counts once.
+        if (LocalPlayer is null || !_discoveredItems.TryGetValue(itemObjectId, out var item) || !_lootedItemObjects.Add(itemObjectId))
         {
             return;
         }
 
-        AddLoot(LocalPlayer.Name, body, item.ItemIndex, item.Quantity, notify);
+        AddLoot(LocalPlayer.Name, body, item.ItemIndex, item.Quantity, notify, isLocal: true);
     }
 
-    private void AddLoot(string lootedBy, string lootedFrom, int itemIndex, int quantity, List<Action> notify)
+    private void AddLoot(string lootedBy, string lootedFrom, int itemIndex, int quantity, List<Action> notify, bool isLocal = false)
     {
         var isMob = lootedFrom.Contains("@MOB", StringComparison.OrdinalIgnoreCase);
         var fromName = isMob ? MobName : lootedFrom;
@@ -380,7 +463,7 @@ public sealed class LootTracker
         }
 
         var now = _utcNow();
-        if (IsDuplicate(now, $"{lootedBy}|{fromName}|{itemIndex}|{quantity}"))
+        if (IsDuplicate(now, $"{lootedBy}|{fromName}|{itemIndex}|{quantity}", isLocal))
         {
             return;
         }
@@ -407,16 +490,19 @@ public sealed class LootTracker
         notify.Add(() => LootAdded?.Invoke(entry));
     }
 
-    /// <summary>The same pickup can arrive twice (once as the local move, once as a broadcast).</summary>
-    private bool IsDuplicate(DateTime now, string key)
+    /// <summary>
+    /// The same pickup can arrive twice: once as our own move and once as a broadcast.
+    /// Our own moves are already counted per item, so two identical ones in a row are two pickups.
+    /// </summary>
+    private bool IsDuplicate(DateTime now, string key, bool isLocal)
     {
         _recentLoot.RemoveAll(r => now - r.Time > DuplicateWindow);
-        if (_recentLoot.Any(r => r.Key == key))
+        if (_recentLoot.Any(r => r.Key == key && (!isLocal || !r.IsLocal)))
         {
             return true;
         }
 
-        _recentLoot.Add((now, key));
+        _recentLoot.Add((now, key, isLocal));
         return false;
     }
 
@@ -466,6 +552,8 @@ public sealed class LootTracker
         _discoveredItems.Clear();
         _playersByObjectId.Clear();
         _currentContainer = null;
+        _lastStackGrowth = null;
+        _lootedItemObjects.Clear();
     }
 
     private static string NonEmpty(string? first, string? second) => !string.IsNullOrEmpty(first) ? first : second ?? string.Empty;

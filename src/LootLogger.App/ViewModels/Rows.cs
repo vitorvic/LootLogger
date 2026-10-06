@@ -29,7 +29,12 @@ public sealed class LootRow(LootEntry entry, ItemDatabase items) : ObservableObj
     public string Time => Entry.UtcTime.ToLocalTime().ToString("HH:mm:ss");
     public string LootedBy => Entry.LootedByName;
     public string LootedByGuild => Entry.LootedByGuild;
-    public string LootedFrom => Entry.LootedFromName == LootTracker.MobName ? Loc.Instance["Mob"] : Entry.LootedFromName;
+    public string LootedFrom => Entry.LootedFromName switch
+    {
+        LootTracker.MobName => Loc.Instance["Mob"],
+        LootTracker.ChestName => Loc.Instance["Chest"],
+        var name => name
+    };
     public string LootedFromGuild => Entry.LootedFromGuild;
     public string Map => Entry.Cluster;
     public int Quantity => Entry.Quantity;

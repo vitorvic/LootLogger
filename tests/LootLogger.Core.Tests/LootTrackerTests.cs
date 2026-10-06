@@ -147,6 +147,102 @@ public class LootTrackerTests
         Assert.Equal("Sunfang Ravine", _tracker.ClusterName);
     }
 
+    // Taken from a real recording with ExitLag on: the player's own requests never show up, only the server's replies.
+    private static readonly Guid InventoryGuid = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
+    private void OpenBag(long bagId, params (long Id, int Item, int Qty)[] items)
+    {
+        foreach (var (id, item, qty) in items)
+        {
+            Receive(PhotonPackets.Event(Codes.NewSimpleItem, new() { [0] = id, [1] = item, [2] = qty }));
+        }
+
+        Receive(PhotonPackets.Event(Codes.AttachItemContainer, new() { [0] = bagId, [1] = ContainerGuid.ToByteArray(), [3] = items.Select(i => i.Id).ToArray() }));
+    }
+
+    [Fact]
+    public void ItemMovedFromBagIntoInventory_IsRecordedWithoutTheRequest()
+    {
+        Join();
+        Receive(PhotonPackets.Event(Codes.NewLoot, new() { [0] = 99114L, [3] = "@MOB_UNDEAD_ARCHER_STANDARD" }));
+        OpenBag(99114, (99115, 2204, 1));
+
+        Receive(PhotonPackets.Event(Codes.InventoryPutItem, new() { [0] = 99115L, [2] = InventoryGuid.ToByteArray(), [3] = 2 }));
+
+        var entry = Assert.Single(_loot);
+        Assert.Equal("Pandas139", entry.LootedByName);
+        Assert.Equal(LootTracker.MobName, entry.LootedFromName);
+        Assert.Equal("T2_OFF_BOOK", entry.ItemId);
+    }
+
+    [Fact]
+    public void ItemsStackingOntoOneAlreadyInInventory_AreEachRecorded()
+    {
+        Join();
+        Receive(PhotonPackets.Event(Codes.NewLoot, new() { [0] = 49215L, [3] = "Pandas139" }));
+        OpenBag(49215, (49208, 105, 1), (49207, 105, 1), (49206, 105, 1));
+
+        Receive(PhotonPackets.Event(Codes.InventoryPutItem, new() { [0] = 49208L, [2] = InventoryGuid.ToByteArray(), [3] = 2 }));
+        _now = _now.AddSeconds(1);
+        Receive(PhotonPackets.Event(Codes.NewSimpleItem, new() { [0] = 49208L, [1] = 105, [2] = 2 }));
+        Receive(PhotonPackets.Event(Codes.InventoryDeleteItem, new() { [0] = 49207L, [1] = 3 }));
+        _now = _now.AddSeconds(1);
+        Receive(PhotonPackets.Event(Codes.NewSimpleItem, new() { [0] = 49208L, [1] = 105, [2] = 3 }));
+        Receive(PhotonPackets.Event(Codes.InventoryDeleteItem, new() { [0] = 49206L, [1] = 4 }));
+
+        Assert.Equal(3, _loot.Count);
+        Assert.All(_loot, l => Assert.Equal("T3_FARM_CHICKEN_BABY", l.ItemId));
+    }
+
+    [Fact]
+    public void ItemTakenFromBagBySomeoneElse_IsNotCountedAsOurs()
+    {
+        Join();
+        Receive(PhotonPackets.Event(Codes.NewLoot, new() { [0] = 77L, [3] = "XAgiota" }));
+        OpenBag(77, (500, 105, 1));
+
+        Receive(PhotonPackets.Event(Codes.InventoryDeleteItem, new() { [0] = 500L, [1] = 0 }));
+
+        Assert.Empty(_loot);
+    }
+
+    [Fact]
+    public void ChestLoot_IsRecordedAsChest()
+    {
+        Join();
+        Receive(PhotonPackets.Event(Codes.NewLootChest, new() { [0] = 113462L, [3] = "TREASURE_COFFER_SOLO" }));
+        OpenBag(113462, (114042, 2005, 3));
+
+        Receive(PhotonPackets.Event(Codes.InventoryPutItem, new() { [0] = 114042L, [1] = 1, [2] = InventoryGuid.ToByteArray(), [3] = 2 }));
+
+        Assert.Equal(LootTracker.ChestName, Assert.Single(_loot).LootedFromName);
+    }
+
+    [Fact]
+    public void BankOrOtherContainers_AreNotLoot()
+    {
+        Join();
+        OpenBag(6, (724841, 105, 1));
+
+        Receive(PhotonPackets.Event(Codes.InventoryPutItem, new() { [0] = 724841L, [2] = InventoryGuid.ToByteArray(), [3] = 2 }));
+
+        Assert.Empty(_loot);
+    }
+
+    [Fact]
+    public void BodiesSentBeforeTheJoinResponse_AreKept()
+    {
+        // On a map change the game sends the bodies first and the player's own info right after.
+        Receive(PhotonPackets.Response(Codes.ChangeCluster, new() { [0] = "2343" }));
+        Receive(PhotonPackets.Event(Codes.NewLoot, new() { [0] = 77L, [3] = "XAgiota" }));
+        Join();
+        OpenBag(77, (500, 105, 1));
+
+        Receive(PhotonPackets.Event(Codes.InventoryPutItem, new() { [0] = 500L, [2] = InventoryGuid.ToByteArray(), [3] = 2 }));
+
+        Assert.Equal("XAgiota", Assert.Single(_loot).LootedFromName);
+    }
+
     private void Join()
     {
         Receive(PhotonPackets.Response(Codes.Join, new()

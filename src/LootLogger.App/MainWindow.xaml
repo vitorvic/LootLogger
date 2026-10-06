@@ -28,25 +28,49 @@
                 <DockPanel LastChildFill="False">
                     <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                         <Image Source="pack://application:,,,/Assets/icon.png" Width="18" Height="18" />
-                        <TextBlock Text="LootLogger" FontWeight="SemiBold" Margin="10,0,12,0" VerticalAlignment="Center" />
-                        <Border Style="{StaticResource Chip}">
-                            <TextBlock Text="{Binding StatusText}">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock" BasedOn="{StaticResource ChipText}">
+                        <TextBlock Text="LootLogger" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        <Border Style="{StaticResource TitleSeparator}" />
+
+                        <!-- Before the game sends the player -->
+                        <TextBlock Text="{l:T WaitingGame}" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"
+                                   Visibility="{Binding IsPlayerIdentified, Converter={StaticResource FalseToVisible}}" />
+
+                        <!-- Player, guild, alliance and map -->
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsPlayerIdentified, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding Player.Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding GuildText}" Foreground="{StaticResource MutedBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding HasCluster, Converter={StaticResource BoolToVisibility}}">
+                                <Border Style="{StaticResource TitleSeparator}" />
+                                <Border Style="{StaticResource TierChip}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding TierText}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource GoldBrush}" />
+                                </Border>
+                                <TextBlock Text="{Binding ClusterName}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <!-- Status dots: green when known, gold while waiting -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="TextElement.Foreground" Value="{StaticResource GoldBrush}" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsCapturing}" Value="True">
-                                                <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsGameDetected}" Value="True">
-                                                <Setter Property="Foreground" Value="{StaticResource GreenBrush}" />
+                                            <DataTrigger Binding="{Binding IsPlayerIdentified}" Value="True">
+                                                <Setter Property="TextElement.Foreground" Value="{StaticResource GreenBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </Border>
-                    </StackPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                </StackPanel.Style>
+                                <Ellipse Width="7" Height="7" Fill="{Binding (TextElement.Foreground), RelativeSource={RelativeSource AncestorType=StackPanel}}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding InGameText}" FontSize="11.5" Margin="5,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="12,0,0,0"
+                                        Visibility="{Binding IsServerKnown, Converter={StaticResource BoolToVisibility}}">
+                                <Ellipse Width="7" Height="7" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ServerText}" FontSize="11.5" Foreground="{StaticResource GreenBrush}" Margin="5,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
                         <Button Style="{StaticResource TitleBarButton}" Click="OnMinimize" ToolTip="Minimizar">
                             <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="10" />
                         </Button>

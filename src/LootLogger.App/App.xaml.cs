@@ -30,10 +30,8 @@ public partial class App : Application
 
         window.Show();
 
-        if (startMinimized)
-        {
-            _viewModel.StartCapture();
-        }
+        // Always capturing while open, like other loggers; there is no start button.
+        _viewModel.StartCapture();
 
         // Pull the newest item list in the background; the built-in copy is used meanwhile.
         _ = Task.Run(async () =>

@@ -43,7 +43,8 @@ public sealed class LootTracker
     public event Action<LootEntry>? LootAdded;
     public event Action<KillEntry>? KillAdded;
     public event Action<LocalPlayer>? PlayerIdentified;
-    public event Action<string>? ClusterChanged;
+    /// <summary>Map name and tier (0 when unknown).</summary>
+    public event Action<string, int>? ClusterChanged;
     public event Action? PartyChanged;
 
     /// <summary>When on, only loot taken by or from party members is recorded.</summary>
@@ -52,6 +53,8 @@ public sealed class LootTracker
     public LocalPlayer? LocalPlayer { get; private set; }
 
     public string ClusterName => _clusters.DisplayName(_clusterIndex);
+
+    public int ClusterTier => _clusters.Tier(_clusterIndex);
 
     public IReadOnlyCollection<string> PartyMembers
     {
@@ -155,8 +158,9 @@ public sealed class LootTracker
 
         var local = LocalPlayer;
         var clusterName = ClusterName;
+        var clusterTier = ClusterTier;
         notify.Add(() => PlayerIdentified?.Invoke(local));
-        notify.Add(() => ClusterChanged?.Invoke(clusterName));
+        notify.Add(() => ClusterChanged?.Invoke(clusterName, clusterTier));
     }
 
     private void OnChangeCluster(IReadOnlyDictionary<byte, object> p, List<Action> notify)
@@ -170,7 +174,8 @@ public sealed class LootTracker
         _clusterIndex = cluster;
         ResetMapState();
         var clusterName = ClusterName;
-        notify.Add(() => ClusterChanged?.Invoke(clusterName));
+        var clusterTier = ClusterTier;
+        notify.Add(() => ClusterChanged?.Invoke(clusterName, clusterTier));
     }
 
     // NewCharacter: 0 object id, 1 name, 7 guid, 8 guild, 51 alliance.

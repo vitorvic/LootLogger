@@ -2,10 +2,11 @@ using System.Text;
 
 namespace LootLogger.Core.Data;
 
-/// <summary>Maps the map index the game sends ("2343") to its name ("Sunfang Cliffs").</summary>
+/// <summary>Maps the map index the game sends ("2343") to its name ("Sunfang Cliffs") and tier.</summary>
 public sealed class ClusterDatabase
 {
     private readonly Dictionary<string, string> _names = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _tiers = new(StringComparer.OrdinalIgnoreCase);
 
     public static ClusterDatabase LoadBuiltIn()
     {
@@ -16,9 +17,14 @@ public sealed class ClusterDatabase
         foreach (var line in reader.ReadToEnd().Split('\n'))
         {
             var parts = line.TrimEnd('\r').Split('\t');
-            if (parts.Length == 2)
+            if (parts.Length >= 2)
             {
                 db._names[parts[0]] = parts[1];
+            }
+
+            if (parts.Length >= 3 && int.TryParse(parts[2], out var tier))
+            {
+                db._tiers[parts[0]] = tier;
             }
         }
 
@@ -50,5 +56,29 @@ public sealed class ClusterDatabase
         }
 
         return clusterIndex;
+    }
+
+    /// <summary>Map tier (1 to 8), or 0 when unknown. Same fallback as <see cref="DisplayName"/>.</summary>
+    public int Tier(string? clusterIndex)
+    {
+        if (string.IsNullOrWhiteSpace(clusterIndex))
+        {
+            return 0;
+        }
+
+        if (_tiers.TryGetValue(clusterIndex, out var tier))
+        {
+            return tier;
+        }
+
+        foreach (var part in clusterIndex.Split('@', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (_tiers.TryGetValue(part, out tier))
+            {
+                return tier;
+            }
+        }
+
+        return 0;
     }
 }

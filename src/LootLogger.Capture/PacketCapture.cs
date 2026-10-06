@@ -31,6 +31,11 @@ public sealed class PacketCapture : IDisposable
     /// <summary>Raised the first time game traffic is seen after starting.</summary>
     public event Action? GameTrafficDetected;
 
+    /// <summary>Raised when game packets start coming from a different server address (big-endian IPv4).</summary>
+    public event Action<uint>? ServerAddressChanged;
+
+    private uint _serverAddress;
+
     public bool IsRunning => _devices.Count > 0 || _sockets.IsRunning;
 
     /// <summary>True when automatic mode can read without Npcap.</summary>
@@ -68,6 +73,7 @@ public sealed class PacketCapture : IDisposable
     {
         Stop();
         _trafficSeen = false;
+        _serverAddress = 0;
 
         if (adapterId is null && CanUseRawSockets)
         {
@@ -158,10 +164,16 @@ public sealed class PacketCapture : IDisposable
     private void Handle(RawCapture raw, bool isPrimaryLink)
     {
         byte[]? payload;
+        var serverChanged = false;
         lock (_lock)
         {
             // Several adapters may deliver at once; the extractor keeps fragment state, so serialize.
             payload = _extractor.Extract(raw.LinkLayerType, raw.Data, DateTime.UtcNow);
+            if (payload is not null && _extractor.LastServerAddress != _serverAddress)
+            {
+                _serverAddress = _extractor.LastServerAddress;
+                serverChanged = true;
+            }
 
             // Everything reaching here already passed the game filter, so fragments are kept too.
             if (_recorder is not null && isPrimaryLink)
@@ -179,6 +191,11 @@ public sealed class PacketCapture : IDisposable
         {
             _trafficSeen = true;
             GameTrafficDetected?.Invoke();
+        }
+
+        if (serverChanged)
+        {
+            ServerAddressChanged?.Invoke(_serverAddress);
         }
 
         PayloadReceived?.Invoke(payload);

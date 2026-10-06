@@ -2,6 +2,7 @@ using System.IO;
 using System.Net.Http;
 using LootLogger.Capture;
 using LootLogger.Core.Data;
+using LootLogger.Core.Network;
 using LootLogger.Core.Protocol;
 using LootLogger.Core.Tracking;
 
@@ -37,9 +38,12 @@ public sealed class CaptureService : IDisposable
         _parser.MessageReceived += Tracker.Handle;
         _capture.PayloadReceived += OnPayload;
         _capture.GameTrafficDetected += () => GameTrafficDetected?.Invoke();
+        _capture.ServerAddressChanged += address => ServerChanged?.Invoke(GameServers.RegionOf(address));
     }
 
     public event Action? GameTrafficDetected;
+
+    public event Action<ServerRegion>? ServerChanged;
 
     public GameCodes Codes { get; }
     public ItemDatabase Items { get; }

@@ -11,6 +11,7 @@ using LootLogger.App.Localization;
 using LootLogger.App.Services;
 using LootLogger.Core.Export;
 using LootLogger.Core.Session;
+using LootLogger.Core.Network;
 using LootLogger.Core.Tracking;
 
 namespace LootLogger.App.ViewModels;
@@ -54,7 +55,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _service.Tracker.LootAdded += e => _dispatcher.BeginInvoke(() => OnLoot(e));
         _service.Tracker.KillAdded += e => _dispatcher.BeginInvoke(() => OnKill(e));
         _service.Tracker.PlayerIdentified += p => _dispatcher.BeginInvoke(() => OnPlayer(p));
-        _service.Tracker.ClusterChanged += c => _dispatcher.BeginInvoke(() => OnCluster(c));
+        _service.Tracker.ClusterChanged += (c, tier) => _dispatcher.BeginInvoke(() => OnCluster(c, tier));
+        _service.ServerChanged += r => _dispatcher.BeginInvoke(() => Server = r);
         _service.Tracker.PartyChanged += () => _dispatcher.BeginInvoke(UpdateParty);
         _service.GameTrafficDetected += () => _dispatcher.BeginInvoke(() =>
         {
@@ -87,33 +89,52 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     // ---------- Status ----------
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StatusText))]
     private bool _isCapturing;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StatusText))]
     private bool _isGameDetected;
 
     [ObservableProperty]
     private bool _npcapMissing;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PlayerText), nameof(IsPlayerIdentified))]
+    [NotifyPropertyChangedFor(nameof(IsPlayerIdentified), nameof(GuildText), nameof(InGameText))]
     private LocalPlayer? _player;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCluster))]
     private string _clusterName = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TierText), nameof(HasTier))]
+    private int _clusterTier;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ServerText), nameof(IsServerKnown))]
+    private ServerRegion _server;
 
     [ObservableProperty]
     private string _partyText = string.Empty;
 
-    public string StatusText => !IsCapturing ? L["StatusStopped"] : IsGameDetected ? L["StatusCapturing"] : L["StatusWaitingGame"];
-
     public bool IsPlayerIdentified => Player is not null;
 
-    public string PlayerText => Player is null
-        ? L["PlayerUnknown"]
-        : string.IsNullOrEmpty(Player.Guild) ? L.Format("PlayerIdentified", Player.Name) : L.Format("PlayerIdentifiedGuild", Player.Name, Player.Guild);
+    /// <summary>"PIVAS · OOPS", or just the guild, or nothing.</summary>
+    public string GuildText => Player is null
+        ? string.Empty
+        : string.Join(" · ", new[] { Player.Guild, Player.Alliance }.Where(t => !string.IsNullOrEmpty(t)));
+
+    public bool HasCluster => ClusterName.Length > 0;
+
+    // Cities and starter zones are tier 1; only real tiers are worth a badge.
+    public bool HasTier => ClusterTier >= 2;
+
+    public string TierText => $"T{ClusterTier}";
+
+    public string InGameText => IsPlayerIdentified ? L["InGame"] : L["OutOfGame"];
+
+    public bool IsServerKnown => Server != ServerRegion.Unknown;
+
+    public string ServerText => L["Server" + Server];
 
     // ---------- Dashboard ----------
 
@@ -138,19 +159,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private string _totalValueUnit = string.Empty;
 
     public bool HasFeed => Feed.Any(f => f.Kind != FeedKind.Info);
-
-    [RelayCommand]
-    private void ToggleCapture()
-    {
-        if (IsCapturing)
-        {
-            StopCapture();
-        }
-        else
-        {
-            StartCapture();
-        }
-    }
 
     public void StartCapture()
     {
@@ -287,13 +295,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         CombatView.Refresh();
     }
 
-    private void OnCluster(string cluster)
+    private void OnCluster(string cluster, int tier)
     {
         if (cluster.Length > 0 && cluster != ClusterName)
         {
             ClusterName = cluster;
             AddFeed(new FeedItem(DateTime.Now, FeedKind.Info, string.Empty, L.Format("FeedMapChanged", cluster), string.Empty, string.Empty, string.Empty));
         }
+
+        ClusterTier = tier;
     }
 
     private void UpdateParty()
@@ -335,8 +345,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private void Relocalize()
     {
-        OnPropertyChanged(nameof(StatusText));
-        OnPropertyChanged(nameof(PlayerText));
+        OnPropertyChanged(nameof(InGameText));
+        OnPropertyChanged(nameof(ServerText));
         OnPropertyChanged(nameof(LootSummary));
         foreach (var row in LootRows)
         {

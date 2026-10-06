@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
 using LootLogger.Capture;
+using LootLogger.Core.Data;
+using LootLogger.Core.Network;
 using PacketDotNet;
 
 namespace LootLogger.Core.Tests;
@@ -23,6 +25,37 @@ public class CaptureTests
     {
         var frames = Ipv4Fragments(Udp(443, 61000, [1, 2, 3]), maxFragmentData: 4000);
         Assert.Null(new UdpPayloadExtractor().Extract(LinkLayers.Raw, frames.Single(), DateTime.UtcNow));
+    }
+
+    [Fact]
+    public void Extract_RemembersTheServerSide()
+    {
+        var extractor = new UdpPayloadExtractor();
+        extractor.Extract(LinkLayers.Raw, Ipv4Fragments(Udp(61000, 5056, [1, 2, 3]), maxFragmentData: 4000).Single(), DateTime.UtcNow);
+        Assert.Equal(0x05000009u, extractor.LastServerAddress);
+
+        extractor.Extract(LinkLayers.Raw, Ipv4Fragments(Udp(5056, 61000, [1, 2, 3]), maxFragmentData: 4000).Single(), DateTime.UtcNow);
+        Assert.Equal(0x0A000002u, extractor.LastServerAddress);
+    }
+
+    [Theory]
+    [InlineData(5, 188, 125, 30, ServerRegion.Americas)]
+    [InlineData(193, 169, 238, 7, ServerRegion.Europe)]
+    [InlineData(5, 45, 187, 200, ServerRegion.Asia)]
+    [InlineData(8, 8, 8, 8, ServerRegion.Unknown)]
+    public void GameServers_FindsRegionByAddress(byte a, byte b, byte c, byte d, ServerRegion expected)
+    {
+        Assert.Equal(expected, GameServers.RegionOf((uint)(a << 24 | b << 16 | c << 8 | d)));
+    }
+
+    [Fact]
+    public void Clusters_KnowNameAndTier()
+    {
+        var clusters = ClusterDatabase.LoadBuiltIn();
+        Assert.Equal("Razorrock Gulch", clusters.DisplayName("3356"));
+        Assert.Equal(8, clusters.Tier("3356"));
+        Assert.Equal(8, clusters.Tier("3356@some-instance"));
+        Assert.Equal(0, clusters.Tier("nope"));
     }
 
     [Fact]

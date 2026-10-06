@@ -16,6 +16,9 @@ public sealed class UdpPayloadExtractor
 
     private readonly Dictionary<(uint Src, uint Dst, ushort Id), FragmentBuffer> _fragments = new();
 
+    /// <summary>IPv4 address of the game server in the last game packet, as a big-endian number; 0 if unknown.</summary>
+    public uint LastServerAddress { get; private set; }
+
     /// <summary>Returns the UDP payload when the frame (or the fragment it completes) is game traffic.</summary>
     public byte[]? Extract(LinkLayers linkLayer, byte[] frame, DateTime now)
     {
@@ -63,14 +66,16 @@ public sealed class UdpPayloadExtractor
         var moreFragments = (flagsAndOffset & 0x2000) != 0;
         var offset = (flagsAndOffset & 0x1FFF) * 8;
         var body = raw[headerLength..totalLength];
+        var source = BinaryPrimitives.ReadUInt32BigEndian(raw.AsSpan(12, 4));
+        var destination = BinaryPrimitives.ReadUInt32BigEndian(raw.AsSpan(16, 4));
 
         if (!moreFragments && offset == 0)
         {
-            return ReadUdp(body);
+            return ReadUdp(body, source, destination);
         }
 
         CleanupFragments(now);
-        var key = (BinaryPrimitives.ReadUInt32BigEndian(raw.AsSpan(12, 4)), BinaryPrimitives.ReadUInt32BigEndian(raw.AsSpan(16, 4)), id);
+        var key = (source, destination, id);
         if (!_fragments.TryGetValue(key, out var buffer))
         {
             if (_fragments.Count >= MaxPendingFragments)
@@ -88,10 +93,10 @@ public sealed class UdpPayloadExtractor
         }
 
         _fragments.Remove(key);
-        return ReadUdp(buffer.Assemble());
+        return ReadUdp(buffer.Assemble(), source, destination);
     }
 
-    private static byte[]? ReadUdp(byte[] udp)
+    private byte[]? ReadUdp(byte[] udp, uint sourceAddress, uint destinationAddress)
     {
         if (udp.Length < 8)
         {
@@ -100,7 +105,14 @@ public sealed class UdpPayloadExtractor
 
         var src = BinaryPrimitives.ReadUInt16BigEndian(udp.AsSpan(0, 2));
         var dst = BinaryPrimitives.ReadUInt16BigEndian(udp.AsSpan(2, 2));
-        return IsGame(src, dst) ? udp[8..] : null;
+        if (!IsGame(src, dst))
+        {
+            return null;
+        }
+
+        // The server is the side using the game port.
+        LastServerAddress = GamePorts.Contains(src) ? sourceAddress : destinationAddress;
+        return udp[8..];
     }
 
     private static bool IsGame(ushort src, ushort dst) => GamePorts.Contains(src) || GamePorts.Contains(dst);

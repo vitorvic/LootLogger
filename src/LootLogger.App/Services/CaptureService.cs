@@ -74,6 +74,8 @@ public sealed class CaptureService : IDisposable
 
     public void Stop() => _capture.Stop();
 
+    public string? RecordingError => _capture.RecordingError;
+
     /// <summary>Plays a recorded .pcap through the tracker, as if it were live.</summary>
     public Task ReplayAsync(string pcapPath) => Task.Run(() => PacketCapture.Replay(pcapPath, OnPayload));
 

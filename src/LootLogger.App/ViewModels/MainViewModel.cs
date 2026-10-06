@@ -184,7 +184,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             IsGameDetected = false;
             _session.MarkCaptureStarted(DateTime.UtcNow);
             AddInfo("FeedCaptureStarted");
-            Message = null;
+            Message = _service.RecordingError is { } recordError ? L.Format("RecordError", recordError) : null;
         }
         catch (Exception e)
         {

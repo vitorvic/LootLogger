@@ -77,13 +77,10 @@ public sealed class PacketCapture : IDisposable
 
         if (adapterId is null && CanUseRawSockets)
         {
-            if (recordPath is not null)
-            {
-                _recorder = new CaptureFileWriterDevice(recordPath);
-                _recorder.Open(new DeviceConfiguration { LinkLayerType = LinkLayers.Raw });
-            }
-
             _sockets.Start(data => Handle(new RawCapture(LinkLayers.Raw, new PosixTimeval(DateTime.UtcNow), data), isPrimaryLink: true));
+
+            // pcap files take the DLT number for raw IP (12), not the file's link type (101).
+            OpenRecorder(recordPath, LinkLayers.RawLegacy);
             return;
         }
 
@@ -113,10 +110,33 @@ public sealed class PacketCapture : IDisposable
             throw new InvalidOperationException("Nenhuma placa de rede pôde ser aberta pelo Npcap.");
         }
 
-        if (recordPath is not null)
+        OpenRecorder(recordPath, _devices[0].LinkType);
+    }
+
+    /// <summary>Why the last recording could not start, or null. Capture keeps running either way.</summary>
+    public string? RecordingError { get; private set; }
+
+    private void OpenRecorder(string? recordPath, LinkLayers linkType)
+    {
+        RecordingError = null;
+        if (recordPath is null)
         {
-            _recorder = new CaptureFileWriterDevice(recordPath);
-            _recorder.Open(new DeviceConfiguration { LinkLayerType = _devices[0].LinkType });
+            return;
+        }
+
+        var recorder = new CaptureFileWriterDevice(recordPath);
+        try
+        {
+            recorder.Open(new DeviceConfiguration { LinkLayerType = linkType });
+            lock (_lock)
+            {
+                _recorder = recorder;
+            }
+        }
+        catch (Exception e)
+        {
+            RecordingError = e.Message;
+            recorder.Dispose();
         }
     }
 

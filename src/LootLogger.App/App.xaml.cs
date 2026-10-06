@@ -22,12 +22,6 @@ public partial class App : Application
         _viewModel = new MainViewModel(new CaptureService(), settings);
         var window = new MainWindow { DataContext = _viewModel };
 
-        var startMinimized = e.Args.Contains(StartupRegistration.MinimizedArgument);
-        if (startMinimized)
-        {
-            window.WindowState = WindowState.Minimized;
-        }
-
         window.Show();
 
         // Always capturing while open, like other loggers; there is no start button.

@@ -35,15 +35,6 @@
                         </Border>
                         <Border Style="{StaticResource SettingLine}">
                             <DockPanel>
-                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding StartWithWindows}" />
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T StartWithWindows}" />
-                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T StartWithWindowsHelp}" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-                        <Border Style="{StaticResource SettingLine}">
-                            <DockPanel>
                                 <Border DockPanel.Dock="Right" VerticalAlignment="Center" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
                                     <StackPanel Orientation="Horizontal">
                                         <RadioButton Style="{StaticResource SegmentButton}" GroupName="Language" Content="Português" IsChecked="{Binding IsPortuguese}" />

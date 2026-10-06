@@ -251,9 +251,6 @@ public sealed partial class MainViewModel
     private bool _partyOnly;
 
     [ObservableProperty]
-    private bool _startWithWindows;
-
-    [ObservableProperty]
     private bool _isPortuguese = true;
 
     [ObservableProperty]
@@ -271,7 +268,6 @@ public sealed partial class MainViewModel
     {
         _loadingSettings = true;
         PartyOnly = _settings.PartyOnly;
-        StartWithWindows = _settings.StartWithWindows;
         IsPortuguese = Loc.Instance.Language != "en";
         ExportFolder = _settings.ExportFolder;
 
@@ -291,24 +287,6 @@ public sealed partial class MainViewModel
     {
         _service.Tracker.PartyOnly = value;
         SaveSetting(s => s.PartyOnly = value);
-    }
-
-    partial void OnStartWithWindowsChanged(bool value)
-    {
-        if (_loadingSettings)
-        {
-            return;
-        }
-
-        try
-        {
-            StartupRegistration.Apply(value);
-            SaveSetting(s => s.StartWithWindows = value);
-        }
-        catch (Exception e)
-        {
-            Message = e.Message;
-        }
     }
 
     partial void OnIsPortugueseChanged(bool value)

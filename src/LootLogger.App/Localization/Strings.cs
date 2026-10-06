@@ -102,8 +102,6 @@ internal static class Strings
         // Settings
         ["PartyMode"] = "Modo Party",
         ["PartyModeHelp"] = "Registra só o loot de quem está na sua party.",
-        ["StartWithWindows"] = "Iniciar com o Windows",
-        ["StartWithWindowsHelp"] = "Abre minimizado ao ligar o computador e já começa a capturar.",
         ["Language"] = "Idioma",
         ["LanguageHelp"] = "Muda os textos do programa. Nomes de itens seguem o idioma escolhido.",
         ["Adapter"] = "Placa de rede",
@@ -238,8 +236,6 @@ internal static class Strings
 
         ["PartyMode"] = "Party mode",
         ["PartyModeHelp"] = "Only records loot from people in your party.",
-        ["StartWithWindows"] = "Start with Windows",
-        ["StartWithWindowsHelp"] = "Opens minimized when the computer starts and begins capturing.",
         ["Language"] = "Language",
         ["LanguageHelp"] = "Changes the program texts. Item names follow the chosen language.",
         ["Adapter"] = "Network adapter",

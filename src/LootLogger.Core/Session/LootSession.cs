@@ -65,23 +65,24 @@ public sealed class LootSession
     public void Add(LootEntry entry)
     {
         _loot.Add(entry);
-        Append(CsvExporter.LootRow(entry));
+        Append(CsvExporter.LootRow(entry), entry.UtcTime);
     }
 
     public void Add(KillEntry entry)
     {
         _kills.Add(entry);
-        Append(CsvExporter.KillRow(entry));
+        Append(CsvExporter.KillRow(entry), entry.UtcTime);
     }
 
-    private void Append(string row)
+    private void Append(string row, DateTime utcTime)
     {
         if (_autosaveFolder is null)
         {
             return;
         }
 
-        _autosavePath ??= UniquePath(_autosaveFolder, CsvExporter.DefaultFileName(StartedUtc, Owner));
+        // Named after the first thing recorded, not when the program opened: that is when the fight started.
+        _autosavePath ??= UniquePath(_autosaveFolder, CsvExporter.DefaultFileName(utcTime, Owner));
 
         try
         {

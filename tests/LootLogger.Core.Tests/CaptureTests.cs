@@ -9,6 +9,27 @@ namespace LootLogger.Core.Tests;
 public class CaptureTests
 {
     [Fact]
+    public void PcapFileWriter_WritesStandardPcap()
+    {
+        var path = Path.GetTempFileName();
+        var time = new DateTime(2026, 10, 7, 12, 0, 1, DateTimeKind.Utc).AddTicks(2_500);
+        using (var writer = new PcapFileWriter(path, 12))
+        {
+            writer.Write(time, [1, 2, 3]);
+        }
+
+        var bytes = File.ReadAllBytes(path);
+        File.Delete(path);
+        Assert.Equal(24 + 16 + 3, bytes.Length);
+        Assert.Equal(0xA1B2C3D4u, BinaryPrimitives.ReadUInt32LittleEndian(bytes));
+        Assert.Equal(12u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(20)));
+        Assert.Equal((uint)(time - DateTime.UnixEpoch).TotalSeconds, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(24)));
+        Assert.Equal(250u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(28)));
+        Assert.Equal(3u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(32)));
+        Assert.Equal(new byte[] { 1, 2, 3 }, bytes[^3..]);
+    }
+
+    [Fact]
     public void Extract_ReturnsPayloadForGamePort()
     {
         var payload = Enumerable.Range(0, 50).Select(i => (byte) i).ToArray();

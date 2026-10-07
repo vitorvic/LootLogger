@@ -15,21 +15,6 @@
     </UserControl.Resources>
 
     <Grid>
-        <!-- Novidades -->
-        <DockPanel x:Name="NewsPanel" Visibility="Collapsed">
-            <TextBlock DockPanel.Dock="Top" Style="{StaticResource PageTitle}" Text="{l:T NavNews}" />
-            <Border Style="{StaticResource Card}" Margin="0,14,0,0" Padding="18,16" VerticalAlignment="Top">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Border Style="{StaticResource Chip}" BorderBrush="{StaticResource GoldDimBrush}">
-                            <TextBlock Style="{StaticResource ChipText}" Foreground="{StaticResource GoldBrush}" Text="{Binding Version, StringFormat=v{0}}" />
-                        </Border>
-                    </StackPanel>
-                    <TextBlock Style="{StaticResource Answer}" Foreground="{StaticResource FgBrush}" Margin="0,10,0,0" Text="{l:T NewsBody}" />
-                </StackPanel>
-            </Border>
-        </DockPanel>
-
         <!-- Ajuda -->
         <DockPanel x:Name="HelpPanel" Visibility="Collapsed">
             <TextBlock DockPanel.Dock="Top" Style="{StaticResource PageTitle}" Text="{l:T NavHelp}" />

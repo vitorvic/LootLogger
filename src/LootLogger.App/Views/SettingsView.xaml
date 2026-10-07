@@ -47,32 +47,8 @@
                                 </StackPanel>
                             </DockPanel>
                         </Border>
-                        <Border Style="{StaticResource SettingLine}">
-                            <DockPanel>
-                                <ComboBox DockPanel.Dock="Right" Width="240" VerticalAlignment="Center"
-                                          ItemsSource="{Binding Adapters}" SelectedItem="{Binding SelectedAdapter}" DisplayMemberPath="Name" />
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T Adapter}" />
-                                    <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T AdapterHelp}" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-                        <Border Style="{StaticResource SettingLine}">
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="{l:T Change}" Command="{Binding ChangeExportFolderCommand}" Margin="0,0,8,0" />
-                                    <Button Content="{l:T OpenFolder}" Command="{Binding OpenExportFolderCommand}" />
-                                </StackPanel>
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource SettingName}" Text="{l:T ExportFolder}" />
-                                    <TextBlock Style="{StaticResource SettingHelp}" FontFamily="{StaticResource MonoFont}" FontSize="11.5"
-                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="{Binding ExportFolder}" ToolTip="{Binding ExportFolder}" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
                         <Border Style="{StaticResource SettingLine}" BorderThickness="0">
                             <DockPanel>
-                                <Button DockPanel.Dock="Right" VerticalAlignment="Center" Content="{l:T UpdateNow}" Command="{Binding UpdateItemsCommand}" />
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource SettingName}" Text="{l:T ItemList}" />
                                     <TextBlock Style="{StaticResource SettingHelp}" Text="{Binding ItemListText}" />
@@ -91,10 +67,7 @@
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource SettingName}" Text="{l:T RecordCapture}" />
                                     <TextBlock Style="{StaticResource SettingHelp}" Text="{l:T RecordCaptureHelp}" />
-                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                        <Button Content="{l:T ReplayRecording}" Command="{Binding ReplayRecordingCommand}" Margin="0,0,8,0" />
-                                        <Button Content="{l:T OpenDataFolder}" Command="{Binding OpenDataFolderCommand}" />
-                                    </StackPanel>
+                                    <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="{l:T OpenDataFolder}" Command="{Binding OpenDataFolderCommand}" />
                                 </StackPanel>
                             </DockPanel>
                         </Border>

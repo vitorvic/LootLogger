@@ -219,19 +219,11 @@ public sealed partial class MainViewModel
 
     // ---------- Settings ----------
 
-    public ObservableCollection<NetworkAdapter> Adapters { get; } = [];
-
-    [ObservableProperty]
-    private NetworkAdapter? _selectedAdapter;
-
     [ObservableProperty]
     private bool _partyOnly;
 
     [ObservableProperty]
     private bool _isPortuguese = true;
-
-    [ObservableProperty]
-    private string _exportFolder = string.Empty;
 
     [ObservableProperty]
     private bool _recordCapture;
@@ -246,16 +238,6 @@ public sealed partial class MainViewModel
         _loadingSettings = true;
         PartyOnly = _settings.PartyOnly;
         IsPortuguese = Loc.Instance.Language != "en";
-        ExportFolder = _settings.ExportFolder;
-
-        Adapters.Clear();
-        Adapters.Add(new NetworkAdapter(string.Empty, L["AdapterAuto"]));
-        foreach (var adapter in CaptureService.ListAdapters())
-        {
-            Adapters.Add(adapter);
-        }
-
-        SelectedAdapter = Adapters.FirstOrDefault(a => a.Id == _settings.AdapterId) ?? Adapters[0];
         ItemListText = L.Format("ItemListHelp", Format.Silver(_service.Items.Count));
         _loadingSettings = false;
     }
@@ -286,46 +268,7 @@ public sealed partial class MainViewModel
         var language = value ? "pt-BR" : "en";
         Loc.Instance.SetLanguage(language);
         SaveSetting(s => s.Language = language);
-        Adapters[0] = new NetworkAdapter(string.Empty, L["AdapterAuto"]);
         ItemListText = L.Format("ItemListHelp", Format.Silver(_service.Items.Count));
-    }
-
-    partial void OnSelectedAdapterChanged(NetworkAdapter? value)
-    {
-        if (_loadingSettings || value is null)
-        {
-            return;
-        }
-
-        SaveSetting(s => s.AdapterId = value.Id.Length == 0 ? null : value.Id);
-        NpcapMissing = CaptureService.NeedsNpcap(_settings.AdapterId) && !CaptureService.IsNpcapInstalled();
-        if (IsCapturing)
-        {
-            StopCapture();
-            StartCapture();
-        }
-    }
-
-    [RelayCommand]
-    private void ChangeExportFolder()
-    {
-        var dialog = new Microsoft.Win32.OpenFolderDialog { InitialDirectory = EnsureFolder(ExportFolder) };
-        if (dialog.ShowDialog() == true)
-        {
-            ExportFolder = dialog.FolderName;
-            SaveSetting(s => s.ExportFolder = dialog.FolderName);
-        }
-    }
-
-    [RelayCommand]
-    private void OpenExportFolder() => OpenUrl(EnsureFolder(ExportFolder));
-
-    [RelayCommand]
-    private async Task UpdateItemsAsync()
-    {
-        var ok = await _service.RefreshItemsAsync();
-        ItemListText = L.Format("ItemListHelp", Format.Silver(_service.Items.Count));
-        Message = ok ? L["ItemListUpdated"] : L["ItemListFailed"];
     }
 
     /// <summary>Refreshes the item list at most once a day, without messages.</summary>
@@ -339,25 +282,6 @@ public sealed partial class MainViewModel
         if (await _service.RefreshItemsAsync())
         {
             await _dispatcher.InvokeAsync(() => ItemListText = L.Format("ItemListHelp", Format.Silver(_service.Items.Count)));
-        }
-    }
-
-    [RelayCommand]
-    private async Task ReplayRecordingAsync()
-    {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "pcap (*.pcap)|*.pcap", InitialDirectory = AppPaths.DataFolder };
-        if (dialog.ShowDialog() != true)
-        {
-            return;
-        }
-
-        try
-        {
-            await _service.ReplayAsync(dialog.FileName);
-        }
-        catch (Exception e)
-        {
-            Message = e.Message;
         }
     }
 

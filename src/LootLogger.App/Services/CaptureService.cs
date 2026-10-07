@@ -53,31 +53,12 @@ public sealed class CaptureService : IDisposable
 
     public bool IsRunning => _capture.IsRunning;
 
-    public static bool IsNpcapInstalled() => PacketCapture.IsDriverAvailable(out _);
-
-    /// <summary>Npcap is only needed for a chosen adapter, or when not running as administrator.</summary>
-    public static bool NeedsNpcap(string? adapterId) => adapterId is not null || !PacketCapture.CanUseRawSockets;
-
-    public static IReadOnlyList<NetworkAdapter> ListAdapters()
-    {
-        try
-        {
-            return PacketCapture.ListAdapters();
-        }
-        catch (Exception)
-        {
-            return [];
-        }
-    }
-
-    public void Start(string? adapterId, string? recordPath = null) => _capture.Start(adapterId, recordPath);
+    /// <summary>Listens on every adapter (Windows sockets as administrator, so no Npcap and works with ExitLag).</summary>
+    public void Start(string? recordPath = null) => _capture.Start(null, recordPath);
 
     public void Stop() => _capture.Stop();
 
     public string? RecordingError => _capture.RecordingError;
-
-    /// <summary>Plays a recorded .pcap through the tracker, as if it were live.</summary>
-    public Task ReplayAsync(string pcapPath) => Task.Run(() => PacketCapture.Replay(pcapPath, OnPayload));
 
     public async Task<bool> RefreshItemsAsync()
     {

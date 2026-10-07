@@ -8,7 +8,6 @@ public sealed class AppSettings
 {
     public string Language { get; set; } = "pt-BR";
     public bool PartyOnly { get; set; }
-    public string? AdapterId { get; set; }
     public string ExportFolder { get; set; } = AppPaths.DefaultExportFolder;
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };

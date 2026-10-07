@@ -108,8 +108,6 @@
                         <Border Width="1" Height="16" Margin="6,0" Background="{StaticResource LineBrush}" VerticalAlignment="Center" />
                         <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavSettings}"
                                      IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Settings}}" />
-                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavNews}"
-                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.News}}" />
                         <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavHelp}"
                                      IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Help}}" />
                         <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavAbout}"
@@ -130,7 +128,6 @@
                     <views:ChestView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Chest}}" />
                     <views:CombatView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Combat}}" />
                     <views:SettingsView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Settings}}" />
-                    <views:InfoView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.News}}" Mode="News" />
                     <views:InfoView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Help}}" Mode="Help" />
                     <views:InfoView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.About}}" Mode="About" />
 

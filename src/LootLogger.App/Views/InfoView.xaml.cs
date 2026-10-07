@@ -14,7 +14,7 @@ public partial class InfoView : UserControl
         InitializeComponent();
     }
 
-    /// <summary>"News", "Help" or "About".</summary>
+    /// <summary>"Help" or "About".</summary>
     public string Mode
     {
         get => (string)GetValue(ModeProperty);
@@ -23,7 +23,6 @@ public partial class InfoView : UserControl
 
     private void ShowMode()
     {
-        NewsPanel.Visibility = Mode == "News" ? Visibility.Visible : Visibility.Collapsed;
         HelpPanel.Visibility = Mode == "Help" ? Visibility.Visible : Visibility.Collapsed;
         AboutPanel.Visibility = Mode == "About" ? Visibility.Visible : Visibility.Collapsed;
     }

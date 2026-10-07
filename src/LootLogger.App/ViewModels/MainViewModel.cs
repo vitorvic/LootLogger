@@ -23,7 +23,6 @@ public enum Page
     Chest,
     Combat,
     Settings,
-    News,
     Help,
     About
 }
@@ -67,7 +66,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         Loc.Instance.PropertyChanged += (_, _) => Relocalize();
 
-        NpcapMissing = CaptureService.NeedsNpcap(_settings.AdapterId) && !CaptureService.IsNpcapInstalled();
         LoadSettingsState();
         AddInfo("FeedSessionStarted");
 
@@ -94,9 +92,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _isGameDetected;
-
-    [ObservableProperty]
-    private bool _npcapMissing;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPlayerIdentified), nameof(GuildText), nameof(InGameText))]
@@ -168,19 +163,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        NpcapMissing = CaptureService.NeedsNpcap(_settings.AdapterId) && !CaptureService.IsNpcapInstalled();
-        if (NpcapMissing)
-        {
-            Page = Page.Dashboard;
-            return;
-        }
-
         try
         {
             var record = RecordCapture
                 ? Path.Combine(AppPaths.DataFolder, $"captura-{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.pcap")
                 : null;
-            _service.Start(_settings.AdapterId, record);
+            _service.Start(record);
             IsCapturing = true;
             IsGameDetected = false;
             _session.MarkCaptureStarted(DateTime.UtcNow);
@@ -224,6 +212,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             CsvExporter.Write(dialog.FileName, _session.Loot, _session.Kills);
             Message = L.Format("Exported", dialog.FileName);
+
+            // The next export opens where this one was saved.
+            if (Path.GetDirectoryName(dialog.FileName) is { } folder)
+            {
+                SaveSetting(s => s.ExportFolder = folder);
+            }
         }
     }
 
@@ -251,9 +245,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         RefreshTiles();
         OnPropertyChanged(nameof(LootSummary));
     }
-
-    [RelayCommand]
-    private static void DownloadNpcap() => OpenUrl("https://npcap.com/#download");
 
     [RelayCommand]
     private void Navigate(Page page) => Page = page;

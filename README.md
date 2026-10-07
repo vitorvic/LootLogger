@@ -4,18 +4,18 @@ Loot logger para Albion Online, para qualquer jogador ou guild. Lê o tráfego d
 
 ## O que faz
 
-- **Painel**: iniciar/parar captura, itens capturados, última hora, tempo ativo, valor estimado e eventos recentes.
-- **Loot Log**: tabela com busca e filtro por guild.
-- **Comparar Baú**: cole o log do baú da guild e veja quem ainda não depositou.
+- **Painel**: itens capturados, última hora, tempo ativo, valor estimado e eventos recentes.
+- **Loot Log**: tabela com busca, filtros e estatísticas.
+- **Comparar Baú**: junte os logs de várias pessoas, cole o log do baú da guild e veja quem guardou, quem está devendo e quem morreu com o item.
 - **Combate**: mortes, quem matou e o que foi perdido.
-- **Configurações**: Modo Party, português/inglês, placa de rede, pasta dos exportados.
+- **Configurações**: Modo Party e português/inglês.
 - **Exportar CSV** no mesmo formato que as guilds já usam. Cada sessão também é salva sozinha, linha por linha.
 
 ## Requisitos
 
 - Windows 10 ou 11.
 - Abrir como administrador (o Windows pergunta ao abrir). Assim ele lê o tráfego do jogo sozinho, inclusive com ExitLag.
-- [Npcap](https://npcap.com/#download) só é necessário se você escolher uma placa de rede específica em Configurações.
+- Não precisa de Npcap.
 - Para compilar: Visual Studio 2026 Community com a carga ".NET desktop development" (.NET 10).
 
 ## Como rodar pelo código

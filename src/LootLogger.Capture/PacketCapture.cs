@@ -24,7 +24,7 @@ public sealed class PacketCapture : IDisposable
     private readonly RawSocketCapture _sockets = new();
     private readonly UdpPayloadExtractor _extractor = new();
     private readonly Lock _lock = new();
-    private CaptureFileWriterDevice? _recorder;
+    private PcapFileWriter? _recorder;
 
     public event Action<byte[]>? PayloadReceived;
 
@@ -124,19 +124,17 @@ public sealed class PacketCapture : IDisposable
             return;
         }
 
-        var recorder = new CaptureFileWriterDevice(recordPath);
         try
         {
-            recorder.Open(new DeviceConfiguration { LinkLayerType = linkType });
+            var recorder = new PcapFileWriter(recordPath, (uint)linkType);
             lock (_lock)
             {
                 _recorder = recorder;
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             RecordingError = e.Message;
-            recorder.Dispose();
         }
     }
 
@@ -152,7 +150,7 @@ public sealed class PacketCapture : IDisposable
         _devices.Clear();
         lock (_lock)
         {
-            _recorder?.Close();
+            _recorder?.Dispose();
             _recorder = null;
         }
     }
@@ -198,7 +196,7 @@ public sealed class PacketCapture : IDisposable
             // Everything reaching here already passed the game filter, so fragments are kept too.
             if (_recorder is not null && isPrimaryLink)
             {
-                _recorder.Write(raw);
+                _recorder.Write(raw.Timeval.Date, raw.Data);
             }
         }
 

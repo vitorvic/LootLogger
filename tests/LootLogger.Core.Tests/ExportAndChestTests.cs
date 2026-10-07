@@ -80,8 +80,7 @@ public class ExportAndChestTests
 
             var lines = File.ReadAllLines(session.AutosavePath!);
             Assert.Equal(3, lines.Length);
-            var local = new DateTime(2026, 10, 6, 21, 56, 0, DateTimeKind.Utc).ToLocalTime();
-            Assert.Equal($"Loot {local:dd-MM-yyyy} {local:HH}h{local:mm} NillBlack.csv", Path.GetFileName(session.AutosavePath));
+            Assert.Equal("Loot 06-10-2026 21h56 UTC NillBlack.csv", Path.GetFileName(session.AutosavePath));
             Assert.Equal(3, session.TotalItems);
             Assert.Equal(25, session.TotalValue);
         }

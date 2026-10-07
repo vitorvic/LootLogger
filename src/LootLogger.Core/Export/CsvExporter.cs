@@ -36,10 +36,10 @@ public static class CsvExporter
         File.WriteAllText(path, ToCsv(loot, kills), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
     }
 
-    /// <summary>A name people can read: "Loot 06-10-2026 18h56 NillBlack.csv", in local time.</summary>
+    /// <summary>A name people can read: "Loot 06-10-2026 21h56 UTC NillBlack.csv". UTC because guilds schedule fights by it.</summary>
     public static string DefaultFileName(DateTime utcNow, string? player = null)
     {
-        var when = utcNow.ToLocalTime().ToString("dd-MM-yyyy HH'h'mm", CultureInfo.InvariantCulture);
+        var when = utcNow.ToString("dd-MM-yyyy HH'h'mm 'UTC'", CultureInfo.InvariantCulture);
         var who = string.Concat((player ?? string.Empty).Where(c => !Path.GetInvalidFileNameChars().Contains(c))).Trim();
         return who.Length > 0 ? $"Loot {when} {who}.csv" : $"Loot {when}.csv";
     }

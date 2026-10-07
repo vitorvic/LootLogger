@@ -17,9 +17,12 @@ concurrency:
 jobs:
   release:
     runs-on: windows-latest
-    env:
-      VERSION: 0.2.${{ github.run_number }}
     steps:
+      # 1.0.1 is run 15; each later run is the next 1.0.x.
+      - name: Version
+        shell: pwsh
+        run: echo "VERSION=1.0.$(${{ github.run_number }} - 14)" >> $env:GITHUB_ENV
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4

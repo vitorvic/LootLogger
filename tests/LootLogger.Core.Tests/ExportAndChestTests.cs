@@ -153,6 +153,37 @@ public class ExportAndChestTests
     }
 
     [Fact]
+    public void ChestLog_SameLineReadWithDifferentDatesIsStillARepeat()
+    {
+        const string line = "\"07/10/2026 20:00:00\"\t\"Ana\"\t\"Broadsword\"\t\"0\"\t\"1\"\t\"1\"";
+        // October 7 in one paste, July 10 in another (a 25/09 line or the clock decides differently).
+        var first = ChestLogParser.Parse(line, new DateTime(2026, 10, 7, 21, 0, 0, DateTimeKind.Utc));
+        var second = ChestLogParser.Parse(line, new DateTime(2026, 7, 10, 21, 0, 0, DateTimeKind.Utc));
+        Assert.NotEqual(first[0].UtcTime, second[0].UtcTime);
+
+        Assert.Empty(ChestLogParser.NotYetPasted(first, second));
+    }
+
+    [Fact]
+    public void ChestLog_LinePastedAloneAndThenWithADayFirstDateCountsOnce()
+    {
+        const string line = "\"10/07/2026 20:00:00\"\t\"Ana\"\t\"Broadsword\"\t\"0\"\t\"1\"\t\"1\"";
+        const string other = "\"25/09/2026 20:00:00\"\t\"Bia\"\t\"Broadsword\"\t\"0\"\t\"1\"\t\"1\"";
+        var now = new DateTime(2026, 10, 7, 21, 0, 0, DateTimeKind.Utc);
+
+        var alone = ChestLogParser.Parse(line, now);
+        var together = ChestLogParser.Parse(line + "\n" + other, now);
+        Assert.Equal(new DateTime(2026, 10, 7, 20, 0, 0, DateTimeKind.Utc), alone[0].UtcTime);  // October 7
+        Assert.Equal(new DateTime(2026, 7, 10, 20, 0, 0, DateTimeKind.Utc), together[0].UtcTime); // July 10
+
+        var loaded = new List<ChestLogEntry>(alone);
+        loaded.AddRange(ChestLogParser.NotYetPasted(loaded, together));
+
+        Assert.Equal(2, loaded.Count);
+        Assert.Single(loaded, e => e.Player == "Ana");
+    }
+
+    [Fact]
     public void ChestLog_EachLoadedLineCancelsOnlyOneNewLine()
     {
         Assert.Equal(2, PasteAll([Potion], [Potion, Potion]).Count(e => e == Potion));

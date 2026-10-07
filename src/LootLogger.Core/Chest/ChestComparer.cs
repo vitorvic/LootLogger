@@ -6,7 +6,15 @@ using LootLogger.Core.Tracking;
 namespace LootLogger.Core.Chest;
 
 /// <summary>One line of the guild chest log the game lets you copy.</summary>
-public sealed record ChestLogEntry(DateTime UtcTime, string Player, string ItemName, int Enchantment, int Quality, int Amount);
+public sealed record ChestLogEntry(DateTime UtcTime, string Player, string ItemName, int Enchantment, int Quality, int Amount)
+{
+    /// <summary>The date exactly as the game wrote it, so a line pasted twice is recognized however the date was read.</summary>
+    public string DateText { get; init; } = string.Empty;
+
+    /// <summary>What makes two chest lines the same line: the game's text, not how the date was read.</summary>
+    public (string, string, string, int, int, int) Key =>
+        (DateText.Length > 0 ? DateText : UtcTime.ToString("O"), Player, ItemName, Enchantment, Quality, Amount);
+}
 
 /// <summary>Some amount of one item, with its estimated price each.</summary>
 public sealed record ItemAmount(string ItemId, string ItemName, int Quantity, long UnitValue)
@@ -71,7 +79,7 @@ public static class ChestLogParser
                 continue;
             }
 
-            result.Add(new ChestLogEntry(time, values[1], values[2], enchantment, quality, amount));
+            result.Add(new ChestLogEntry(time, values[1], values[2], enchantment, quality, amount) { DateText = values[0] });
         }
 
         return result;
@@ -145,18 +153,19 @@ public static class ChestLogParser
 
     /// <summary>
     /// The lines of a new paste that were not pasted before, so the same chest tab pasted twice
-    /// does not count deposits twice. Identical lines inside one paste are real repeats and stay;
+    /// does not count deposits twice. Lines are compared as the game wrote them (date text, player,
+    /// item, enchantment, quality, amount), like the guild site does. Identical lines inside one paste are real repeats and stay;
     /// a tab copied again later only adds what is new.
     /// </summary>
     public static List<ChestLogEntry> NotYetPasted(IEnumerable<ChestLogEntry> existing, IReadOnlyList<ChestLogEntry> pasted)
     {
-        var seen = existing.GroupBy(e => e).ToDictionary(g => g.Key, g => g.Count());
+        var seen = existing.GroupBy(e => e.Key).ToDictionary(g => g.Key, g => g.Count());
         var result = new List<ChestLogEntry>();
         foreach (var entry in pasted)
         {
-            if (seen.TryGetValue(entry, out var count) && count > 0)
+            if (seen.TryGetValue(entry.Key, out var count) && count > 0)
             {
-                seen[entry] = count - 1;
+                seen[entry.Key] = count - 1;
             }
             else
             {

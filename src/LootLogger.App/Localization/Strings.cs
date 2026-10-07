@@ -9,7 +9,6 @@ internal static class Strings
         ["NavDashboard"] = "Painel",
         ["NavLootLog"] = "Loot Log",
         ["NavChest"] = "Comparar Baú",
-        ["NavCombat"] = "Combate",
         ["NavSettings"] = "Configurações",
         ["NavHelp"] = "Ajuda",
         ["NavAbout"] = "Sobre",
@@ -55,9 +54,6 @@ internal static class Strings
 
         // Loot log
         ["SearchHint"] = "Buscar jogador ou item…",
-        ["ColTime"] = "HORÁRIO",
-        ["ColMap"] = "MAPA",
-        ["ColValue"] = "VALOR",
         ["LootSummary"] = "{0} itens · {1} no total",
         ["LootSummaryMine"] = "seu loot: {0} itens, {1}",
         ["LootedFromLine"] = "de {0}",
@@ -140,14 +136,8 @@ internal static class Strings
         ["ChestNoCards"] = "Ninguém aparece com esses filtros.",
         ["ChestNoLoot"] = "Nenhum loot ainda. Escolha um arquivo à esquerda ou arraste para cá.",
 
-        // Combat
-        ["OnlyMyGuild"] = "Só minha guild",
-        ["TileKills"] = "ABATES",
-        ["TileDeaths"] = "MORTES",
+        // Deaths
         ["ColDied"] = "MORREU",
-        ["ColKiller"] = "MATOU",
-        ["ColLost"] = "PERDEU",
-        ["NothingLost"] = "—",
 
         // Settings
         ["PartyMode"] = "Modo Party",
@@ -188,7 +178,6 @@ internal static class Strings
         ["NavDashboard"] = "Dashboard",
         ["NavLootLog"] = "Loot Log",
         ["NavChest"] = "Chest Check",
-        ["NavCombat"] = "Combat",
         ["NavSettings"] = "Settings",
         ["NavHelp"] = "Help",
         ["NavAbout"] = "About",
@@ -231,9 +220,6 @@ internal static class Strings
         ["Thousand"] = "k",
 
         ["SearchHint"] = "Search player or item…",
-        ["ColTime"] = "TIME",
-        ["ColMap"] = "MAP",
-        ["ColValue"] = "VALUE",
         ["LootSummary"] = "{0} items · {1} in total",
         ["LootSummaryMine"] = "your loot: {0} items, {1}",
         ["LootedFromLine"] = "from {0}",
@@ -315,13 +301,7 @@ internal static class Strings
         ["ChestNoCards"] = "Nobody matches these filters.",
         ["ChestNoLoot"] = "No loot yet. Pick a file on the left or drag one here.",
 
-        ["OnlyMyGuild"] = "Only my guild",
-        ["TileKills"] = "KILLS",
-        ["TileDeaths"] = "DEATHS",
         ["ColDied"] = "DIED",
-        ["ColKiller"] = "KILLER",
-        ["ColLost"] = "LOST",
-        ["NothingLost"] = "—",
 
         ["PartyMode"] = "Party mode",
         ["PartyModeHelp"] = "Only records loot from people in your party.",

@@ -21,7 +21,6 @@ public enum Page
     Dashboard,
     LootLog,
     Chest,
-    Combat,
     Settings,
     Help,
     About
@@ -47,8 +46,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         LootView = CollectionViewSource.GetDefaultView(LootRows);
         LootView.Filter = FilterLoot;
-        CombatView = CollectionViewSource.GetDefaultView(KillRows);
-        CombatView.Filter = FilterKill;
         InitChest();
 
         _service.Tracker.PartyOnly = settings.PartyOnly;
@@ -234,7 +231,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         Feed.Clear();
         LootRows.Clear();
-        KillRows.Clear();
         _lootStatsDirty = true;
         if (ShowLootStats)
         {
@@ -266,7 +262,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             (Loc.Instance.Language == "en" ? " from " : " de ") + row.LootedFrom,
             entry.TotalValue > 0 ? Format.Silver(entry.TotalValue) : string.Empty));
 
-        UpdateLostItems(entry);
         _chestDirty = true;
         RefreshTiles();
         OnPropertyChanged(nameof(LootSummary));
@@ -275,10 +270,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void OnKill(KillEntry entry)
     {
         _session.Add(entry);
-        KillRows.Insert(0, new KillRow(entry));
         AddFeed(new FeedItem(entry.UtcTime.ToLocalTime(), FeedKind.Kill, string.Empty,
-            L.Format("FeedKill", entry.Died, entry.DiedGuild, entry.KilledBy, entry.KilledByGuild), string.Empty, string.Empty, L["NavCombat"]));
-        RefreshCombatTiles();
+            L.Format("FeedKill", entry.Died, entry.DiedGuild, entry.KilledBy, entry.KilledByGuild), string.Empty, string.Empty, string.Empty));
     }
 
     private void OnPlayer(LocalPlayer player)
@@ -294,8 +287,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         LootView.Refresh();
         OnPropertyChanged(nameof(LootSummary));
         UpdateParty();
-        RefreshCombatTiles();
-        CombatView.Refresh();
     }
 
     private void OnCluster(string cluster, int tier)

@@ -113,40 +113,6 @@ public sealed class RankRow(int rank, string name, string guild, bool isMine, lo
     public double BarFraction { get; set; }
 }
 
-public sealed class KillRow(KillEntry entry) : ObservableObject
-{
-    private string _lost = Loc.Instance["NothingLost"];
-    private long _lostValue;
-
-    public KillEntry Entry { get; } = entry;
-
-    public string Time => Entry.UtcTime.ToLocalTime().ToString("HH:mm:ss");
-    public string Died => Entry.Died;
-    public string DiedGuild => Entry.DiedGuild;
-    public string Killer => Entry.KilledBy;
-    public string KillerGuild => Entry.KilledByGuild;
-    public string Map => Entry.Cluster;
-
-    public string Lost
-    {
-        get => _lost;
-        set => SetProperty(ref _lost, value);
-    }
-
-    public long LostValue
-    {
-        get => _lostValue;
-        set
-        {
-            if (SetProperty(ref _lostValue, value))
-            {
-                OnPropertyChanged(nameof(LostValueText));
-            }
-        }
-    }
-
-    public string LostValueText => LostValue > 0 ? Format.Silver(LostValue) : string.Empty;
-}
 
 public static class Format
 {

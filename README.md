@@ -7,7 +7,6 @@ Loot logger para Albion Online, para qualquer jogador ou guild. Lê o tráfego d
 - **Painel**: itens capturados, última hora, tempo ativo, valor estimado e eventos recentes.
 - **Loot Log**: tabela com busca, filtros e estatísticas.
 - **Comparar Baú**: junte os logs de várias pessoas, cole o log do baú da guild e veja quem guardou, quem está devendo e quem morreu com o item.
-- **Combate**: mortes, quem matou e o que foi perdido.
 - **Configurações**: Modo Party e português/inglês.
 - **Exportar CSV** no mesmo formato que as guilds já usam. Cada sessão também é salva sozinha, linha por linha.
 

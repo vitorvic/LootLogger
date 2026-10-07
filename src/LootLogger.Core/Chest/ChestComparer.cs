@@ -209,7 +209,7 @@ public static class ChestComparer
         }
 
         var result = new List<PlayerComparison>();
-        foreach (var player in lootList.GroupBy(l => l.LootedByName, StringComparer.OrdinalIgnoreCase))
+        foreach (var player in lootList.Where(l => !IsTrash(l.ItemId)).GroupBy(l => l.LootedByName, StringComparer.OrdinalIgnoreCase))
         {
             // Only deposits made after the player first picked the item up count, so the same item
             // deposited before the fight (yesterday, say) does not cover today's loot.
@@ -284,6 +284,12 @@ public static class ChestComparer
     public static readonly TimeSpan DepositClockSlack = TimeSpan.FromMinutes(30);
 
     private static readonly TimeSpan DeathGap = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// Broken leftovers of destroyed gear: nobody deposits them. The app does not record them,
+    /// but files from other loggers can have them.
+    /// </summary>
+    private static bool IsTrash(string itemId) => itemId.EndsWith("_TRASH", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>A pause this long with no pickup or death ends a fight. In the real logs we have, a fight pauses for 13 minutes at most.</summary>
     private static readonly TimeSpan FightGap = TimeSpan.FromHours(1);

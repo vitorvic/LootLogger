@@ -213,6 +213,14 @@ public class ChestScenarioTests
         Assert.Equal((2, 0, 3), (ana.Deposited, ana.MissingCount, ana.LostCount));
     }
 
+    [Fact]
+    public void Trash_IsNotCountedAsMissing()
+    {
+        var result = ChestComparer.Compare([Pick("Ana", "T8_TRASH"), Pick("Ana", "T6_BAG")], [], Items);
+
+        Assert.DoesNotContain(Assert.Single(result).Missing, m => m.ItemId.EndsWith("_TRASH", StringComparison.Ordinal));
+    }
+
     // ---------- Pasting the chest log ----------
 
     [Fact]

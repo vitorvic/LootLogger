@@ -92,6 +92,26 @@ public static class LootFile
         return (result, kills);
     }
 
+    /// <summary>
+    /// Joins pickups and deaths of several logs of one fight, lining up PC clocks first,
+    /// so each pickup and each death counts once.
+    /// </summary>
+    public static (List<LootEntry> Loot, List<KillEntry> Kills) MergeAll(
+        IEnumerable<(IReadOnlyList<LootEntry> Loot, IReadOnlyList<KillEntry> Kills)> logs)
+    {
+        var loot = new List<LootEntry>();
+        var kills = new List<IReadOnlyList<KillEntry>>();
+        foreach (var (logLoot, logKills) in logs)
+        {
+            var offset = ClockOffset(loot, logLoot);
+            var shiftedLoot = logLoot.Select(e => e with { UtcTime = e.UtcTime + offset }).ToList();
+            kills.Add(logKills.Select(k => k with { UtcTime = k.UtcTime + offset }).ToList());
+            loot = loot.Count == 0 ? shiftedLoot : Merge([loot, shiftedLoot]);
+        }
+
+        return (loot, MergeKills(kills));
+    }
+
     /// <summary>Joins the deaths of several logs; one death seen by two loggers counts once.</summary>
     public static List<KillEntry> MergeKills(IEnumerable<IReadOnlyList<KillEntry>> logs)
     {
@@ -120,8 +140,12 @@ public static class LootFile
     public static List<LootEntry> Merge(IEnumerable<IReadOnlyList<LootEntry>> logs)
     {
         var merged = new List<LootEntry>();
-        foreach (var log in logs)
+        foreach (var rawLog in logs)
         {
+            // Each PC's clock can be off by a minute or more: line this log up with what is merged so far.
+            var offset = ClockOffset(merged, rawLog);
+            var log = offset == TimeSpan.Zero ? rawLog : rawLog.Select(e => e with { UtcTime = e.UtcTime + offset }).ToList();
+
             // Each earlier pickup can stand in for one pickup of this log only.
             var used = new HashSet<int>();
             var before = merged.Count;
@@ -150,6 +174,60 @@ public static class LootFile
 
         return merged.OrderBy(e => e.UtcTime).ToList();
     }
+
+    /// <summary>
+    /// How much to add to the times of <paramref name="log"/> so they match <paramref name="merged"/>:
+    /// the time gap shared by the most pickups both logs saw (same looter, item, amount and body).
+    /// Zero when the logs have nothing in common.
+    /// </summary>
+    public static TimeSpan ClockOffset(IReadOnlyList<LootEntry> merged, IReadOnlyList<LootEntry> log)
+    {
+        if (merged.Count == 0 || log.Count == 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var byKey = merged.ToLookup(Key);
+        var gaps = new List<double>();
+        foreach (var entry in log)
+        {
+            foreach (var other in byKey[Key(entry)])
+            {
+                gaps.Add((other.UtcTime - entry.UtcTime).TotalSeconds);
+            }
+        }
+
+        if (gaps.Count == 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        // The gap most other gaps agree with (within the same-event window).
+        gaps.Sort();
+        var window = SameEventWindow.TotalSeconds;
+        var best = 0.0;
+        var bestCount = 0;
+        var start = 0;
+        for (var end = 0; end < gaps.Count; end++)
+        {
+            while (gaps[end] - gaps[start] > window)
+            {
+                start++;
+            }
+
+            if (end - start + 1 > bestCount)
+            {
+                bestCount = end - start + 1;
+                best = gaps[(start + end) / 2];
+            }
+        }
+
+        // A couple of chance matches are not enough to move a whole log.
+        return bestCount >= 3 && Math.Abs(best) > window / 2 ? TimeSpan.FromSeconds(best) : TimeSpan.Zero;
+    }
+
+    private static (string, string, int, string) Key(LootEntry e) =>
+        (e.LootedByName.ToUpperInvariant(), e.ItemId.ToUpperInvariant(), e.Quantity, e.LootedFromName.ToUpperInvariant());
 
     private static bool IsSamePickup(LootEntry a, LootEntry b) =>
         a.Quantity == b.Quantity

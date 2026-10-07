@@ -250,6 +250,20 @@ public sealed partial class MainViewModel
         RecomputeChest();
     }
 
+    [RelayCommand]
+    private void RemoveLootSource(LootSourceRow? row)
+    {
+        if (row is null || row.IsLive)
+        {
+            return;
+        }
+
+        _pickedFiles.RemoveAll(p => string.Equals(p, row.Path, StringComparison.OrdinalIgnoreCase));
+        row.PropertyChanged -= OnLootSourceChanged;
+        LootSources.Remove(row);
+        RecomputeChest();
+    }
+
     private void OnLootSourceChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(LootSourceRow.IsChecked))
@@ -321,10 +335,10 @@ public sealed partial class MainViewModel
             live.Detail = L.Format("LiveDetail", Format.Silver(_session.TotalItems));
         }
 
-        var checkedSources = LootSources.Where(s => s.IsChecked).ToList();
-        var logs = checkedSources.Select(s => s.IsLive ? _session.Loot : s.Loot).ToList();
-        var loot = logs.Count == 1 ? logs[0] : LootFile.Merge(logs);
-        var kills = LootFile.MergeKills(checkedSources.Select(s => s.IsLive ? _session.Kills : s.Kills));
+        var logs = LootSources.Where(s => s.IsChecked)
+            .Select(s => s.IsLive ? (_session.Loot, _session.Kills) : (s.Loot, s.Kills))
+            .ToList();
+        var (loot, kills) = LootFile.MergeAll(logs);
         ChestMergedText = logs.Count > 1 ? L.Format("LogsMerged", logs.Count) : string.Empty;
 
         // Without a chest log everything counts as missing, which the cards show as "Pegou".

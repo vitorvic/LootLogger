@@ -85,6 +85,19 @@ public class LootFileTests
     }
 
     [Fact]
+    public void Merge_LinesUpPcsWhoseClocksDiffer()
+    {
+        var mine = new[] { Loot("Ana", "T6_BAG", 1, 100), Loot("Bia", "T5_CAPE", 1, 103), Loot("Caio", "T4_MAIN_SWORD", 1, 110) };
+        // The other PC's clock is 76 s behind.
+        var theirs = new[] { Loot("Ana", "T6_BAG", 1, 24), Loot("Bia", "T5_CAPE", 1, 27), Loot("Caio", "T4_MAIN_SWORD", 1, 34), Loot("Duda", "T4_BAG", 1, 40) };
+
+        var merged = LootFile.Merge([mine, theirs]);
+
+        Assert.Equal(4, merged.Count);
+        Assert.Equal(mine[0].UtcTime.AddSeconds(16), merged.Single(e => e.LootedByName == "Duda").UtcTime);
+    }
+
+    [Fact]
     public void Merge_KeepsRepeatedPickupsInsideOneLog()
     {
         var log = new[] { Loot("Ana", "T6_BAG", 1, 0), Loot("Ana", "T6_BAG", 1, 1) };

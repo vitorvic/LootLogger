@@ -4,6 +4,28 @@
              xmlns:l="clr-namespace:LootLogger.App.Localization"
              AllowDrop="True" DragEnter="OnDragEnter" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
     <UserControl.Resources>
+        <!-- Small "x" that takes a file out of the list -->
+        <Style x:Key="RemoveButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Width="22" Height="22" CornerRadius="6" Background="Transparent">
+                            <Path x:Name="Cross" Data="M0,0 L8,8 M8,0 L0,8" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.5"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource RedGlassBrush}" />
+                                <Setter TargetName="Cross" Property="Stroke" Value="{StaticResource RedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- One loot log in the left list, ticked to take part in the comparison -->
         <Style x:Key="SourceRow" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand" />
@@ -29,6 +51,10 @@
                                 </StackPanel>
                                 <Ellipse Grid.Column="2" Width="7" Height="7" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center"
                                          Visibility="{Binding IsLive, Converter={StaticResource BoolToVisibility}}" />
+                                <Button Grid.Column="2" Style="{StaticResource RemoveButton}" ToolTip="{l:T RemoveFromList}"
+                                        Command="{Binding DataContext.RemoveLootSourceCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Visibility="{Binding IsLive, Converter={StaticResource FalseToVisible}}" />
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>

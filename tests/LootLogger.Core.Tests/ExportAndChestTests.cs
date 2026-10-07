@@ -189,4 +189,49 @@ public class ExportAndChestTests
         Assert.Empty(valniaa.Missing);
         Assert.Equal("Pandas139", result[0].Player);
     }
+
+    [Fact]
+    public void Compare_DepositsMadeBeforeThePickupDoNotCount()
+    {
+        // Picked up at 02:49:41 on 06/10.
+        var loot = new[] { Loot("Valniaa", "T7_POTION_REVIVE", "Major Gigantify Potion", 3, 12486) };
+        var pickup = loot[0].UtcTime;
+        var chest = new[]
+        {
+            new ChestLogEntry(pickup.AddDays(-1), "Valniaa", "Major Gigantify Potion", 0, 0, 1),    // yesterday
+            new ChestLogEntry(pickup.AddHours(-3), "Valniaa", "Major Gigantify Potion", 0, 0, 1),   // chest log in Brazil time
+            new ChestLogEntry(pickup.AddMinutes(20), "Valniaa", "Major Gigantify Potion", 0, 0, 1)  // after the fight
+        };
+
+        var valniaa = Assert.Single(ChestComparer.Compare(loot, chest, Items));
+
+        Assert.Equal(2, valniaa.Deposited);
+        Assert.Equal(1, Assert.Single(valniaa.Missing).Quantity);
+    }
+
+    [Theory]
+    [InlineData("10/07/2026 20:00:00", 10, 7)] // month first, as the game shows it in English
+    [InlineData("07/10/2026 20:00:00", 10, 7)] // day first; July 10 would be months ago
+    [InlineData("7/10/2026 20:00:00", 10, 7)]
+    public void ChestLog_ReadsTheDateEitherWay(string date, int month, int day)
+    {
+        var text = $"\"{date}\"\t\"Ana\"\t\"Broadsword\"\t\"0\"\t\"1\"\t\"1\"";
+        var now = new DateTime(2026, 10, 7, 21, 0, 0, DateTimeKind.Utc);
+
+        var entry = Assert.Single(ChestLogParser.Parse(text, now));
+
+        Assert.Equal(new DateTime(2026, month, day, 20, 0, 0, DateTimeKind.Utc), entry.UtcTime);
+    }
+
+    [Fact]
+    public void ChestLog_OneUnmistakableDateDecidesTheWholePaste()
+    {
+        const string text = "\"05/10/2026 20:00:00\"\t\"Ana\"\t\"Broadsword\"\t\"0\"\t\"1\"\t\"1\"\n" +
+                            "\"25/09/2026 20:00:00\"\t\"Ana\"\t\"Broadsword\"\t\"0\"\t\"1\"\t\"1\"";
+
+        var entries = ChestLogParser.Parse(text, new DateTime(2026, 10, 7, 21, 0, 0, DateTimeKind.Utc));
+
+        Assert.Equal(new DateTime(2026, 10, 5, 20, 0, 0, DateTimeKind.Utc), entries[0].UtcTime);
+        Assert.Equal(new DateTime(2026, 9, 25, 20, 0, 0, DateTimeKind.Utc), entries[1].UtcTime);
+    }
 }

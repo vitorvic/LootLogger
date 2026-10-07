@@ -31,37 +31,42 @@ public sealed record PlayerComparison(
 
 public static class ChestLogParser
 {
-    private static readonly string[] DateFormats =
-    [
-        "MM/dd/yyyy HH:mm:ss",
-        "dd/MM/yyyy HH:mm:ss",
-        "yyyy-MM-dd HH:mm:ss",
-        "dd.MM.yyyy HH:mm:ss"
-    ];
+    // Slash dates are read month first or day first, whichever fits the whole paste (see ReadDates).
+    private static readonly string[] MonthFirst = ["M/d/yyyy H:mm:ss", "yyyy-MM-dd H:mm:ss", "d.M.yyyy H:mm:ss"];
+    private static readonly string[] DayFirst = ["d/M/yyyy H:mm:ss", "yyyy-MM-dd H:mm:ss", "d.M.yyyy H:mm:ss"];
 
     /// <summary>
     /// Reads the text copied from the chest log: Date, Player, Item, Enchantment, Quality, Amount,
     /// tab or comma separated, values usually in quotes. Header and unreadable lines are skipped.
+    /// Times are taken as UTC, like the game shows them.
     /// </summary>
-    public static List<ChestLogEntry> Parse(string text)
+    /// <param name="now">Current time, to tell 07/10 (October 7) from July 10 when both fit.</param>
+    public static List<ChestLogEntry> Parse(string text, DateTime? now = null)
     {
-        var result = new List<ChestLogEntry>();
+        var rows = new List<List<string>>();
         foreach (var rawLine in text.Split('\n'))
         {
-            var line = rawLine.Trim().TrimStart('﻿');
+            var line = rawLine.Trim().TrimStart('\uFEFF');
             if (line.Length == 0)
             {
                 continue;
             }
 
             var values = Split(line, line.Contains('\t') ? '\t' : ',');
-            if (values.Count != 6
-                || !DateTime.TryParseExact(values[0], DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var time)
+            if (values.Count == 6 && values[1].Length > 0 && values[2].Length > 0)
+            {
+                rows.Add(values);
+            }
+        }
+
+        var formats = PickDateFormats(rows.Select(r => r[0]).ToList(), now ?? DateTime.UtcNow);
+        var result = new List<ChestLogEntry>();
+        foreach (var values in rows)
+        {
+            if (!TryDate(values[0], formats, out var time)
                 || !int.TryParse(values[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out var enchantment)
                 || !int.TryParse(values[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out var quality)
-                || !int.TryParse(values[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out var amount)
-                || values[1].Length == 0
-                || values[2].Length == 0)
+                || !int.TryParse(values[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out var amount))
             {
                 continue;
             }
@@ -71,6 +76,37 @@ public static class ChestLogParser
 
         return result;
     }
+
+    /// <summary>
+    /// Month first unless the paste only makes sense day first (a "25/10" somewhere), or both make
+    /// sense and day first puts the newest line closer to now without going into the future.
+    /// </summary>
+    private static string[] PickDateFormats(List<string> dates, DateTime now)
+    {
+        var monthFirst = dates.Select(d => TryDate(d, MonthFirst, out var t) ? t : (DateTime?)null).ToList();
+        var dayFirst = dates.Select(d => TryDate(d, DayFirst, out var t) ? t : (DateTime?)null).ToList();
+        var monthCount = monthFirst.Count(t => t is not null);
+        var dayCount = dayFirst.Count(t => t is not null);
+        if (monthCount != dayCount)
+        {
+            return dayCount > monthCount ? DayFirst : MonthFirst;
+        }
+
+        if (monthCount == 0)
+        {
+            return MonthFirst;
+        }
+
+        return Distance(dayFirst.Max()!.Value, now) < Distance(monthFirst.Max()!.Value, now) ? DayFirst : MonthFirst;
+    }
+
+    // How far a log's newest line is from now; a date in the future is very unlikely.
+    private static TimeSpan Distance(DateTime newest, DateTime now) =>
+        newest > now.AddDays(1) ? TimeSpan.MaxValue : (now - newest).Duration();
+
+    private static bool TryDate(string value, string[] formats, out DateTime time) =>
+        DateTime.TryParseExact(value, formats, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out time);
 
     private static List<string> Split(string line, char delimiter)
     {
@@ -136,7 +172,8 @@ public static class ChestComparer
 {
     /// <summary>
     /// For each player who looted, counts what they picked up against what they deposited.
-    /// Deposits are matched to loot by item id; withdrawals (negative amounts) are ignored.
+    /// Deposits are matched to loot by item id and only count when made after the item was picked up;
+    /// withdrawals (negative amounts) are ignored, since only officers can take items out.
     /// Items not deposited that were picked up before the player died are counted as lost on death, not missing.
     /// </summary>
     public static List<PlayerComparison> Compare(
@@ -147,18 +184,29 @@ public static class ChestComparer
             .GroupBy(k => k.Died, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => LatestDeath(g), StringComparer.OrdinalIgnoreCase);
 
-        var deposits = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+        var deposits = new Dictionary<string, Dictionary<string, List<ChestLogEntry>>>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in chest.Where(c => c.Amount > 0))
         {
             var itemId = items.FindByName(entry.ItemName, entry.Enchantment)?.UniqueName ?? entry.ItemName;
-            var byItem = deposits.TryGetValue(entry.Player, out var d) ? d : deposits[entry.Player] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            byItem[itemId] = byItem.GetValueOrDefault(itemId) + entry.Amount;
+            var byItem = deposits.TryGetValue(entry.Player, out var d) ? d : deposits[entry.Player] = new Dictionary<string, List<ChestLogEntry>>(StringComparer.OrdinalIgnoreCase);
+            (byItem.TryGetValue(itemId, out var list) ? list : byItem[itemId] = []).Add(entry);
         }
 
         var result = new List<PlayerComparison>();
         foreach (var player in lootList.GroupBy(l => l.LootedByName, StringComparer.OrdinalIgnoreCase))
         {
-            var remaining = deposits.TryGetValue(player.Key, out var d) ? new Dictionary<string, int>(d, StringComparer.OrdinalIgnoreCase) : [];
+            // Only deposits made after the player first picked the item up count, so the same item
+            // deposited before the fight (yesterday, say) does not cover today's loot.
+            var remaining = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (deposits.TryGetValue(player.Key, out var d))
+            {
+                foreach (var item in player.GroupBy(l => l.ItemId))
+                {
+                    var from = item.Min(l => l.UtcTime) - DepositClockSlack;
+                    remaining[item.Key] = d.TryGetValue(item.Key, out var list) ? list.Where(e => e.UtcTime >= from).Sum(e => e.Amount) : 0;
+                }
+            }
+
             var deposited = 0;
             var missing = new List<ItemAmount>();
             var kept = new List<ItemAmount>();
@@ -206,6 +254,13 @@ public static class ChestComparer
 
         return result.OrderByDescending(r => r.MissingValue).ThenByDescending(r => r.MissingCount).ThenByDescending(r => r.LostCount).ToList();
     }
+
+    /// <summary>
+    /// How much earlier than the pickup a deposit may look and still count. Covers PC clocks being off
+    /// and a chest log shown in Brazil time (UTC-3) instead of UTC, which is not confirmed yet; a
+    /// deposit from the day before is still left out.
+    /// </summary>
+    public static readonly TimeSpan DepositClockSlack = TimeSpan.FromHours(4);
 
     private static readonly TimeSpan DeathGap = TimeSpan.FromMinutes(2);
 

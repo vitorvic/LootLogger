@@ -230,7 +230,8 @@ public class ExportAndChestTests
         var chest = new[]
         {
             new ChestLogEntry(pickup.AddDays(-1), "Valniaa", "Major Gigantify Potion", 0, 0, 1),    // yesterday
-            new ChestLogEntry(pickup.AddHours(-3), "Valniaa", "Major Gigantify Potion", 0, 0, 1),   // chest log in Brazil time
+            new ChestLogEntry(pickup.AddHours(-3), "Valniaa", "Major Gigantify Potion", 0, 0, 1),   // an earlier fight
+            new ChestLogEntry(pickup.AddMinutes(-25), "Valniaa", "Major Gigantify Potion", 0, 0, 1), // PC clock a bit off
             new ChestLogEntry(pickup.AddMinutes(20), "Valniaa", "Major Gigantify Potion", 0, 0, 1)  // after the fight
         };
 
@@ -238,6 +239,24 @@ public class ExportAndChestTests
 
         Assert.Equal(2, valniaa.Deposited);
         Assert.Equal(1, Assert.Single(valniaa.Missing).Quantity);
+    }
+
+    [Fact]
+    public void ChestLog_ReadsARealPortugueseCopy()
+    {
+        // Copied from the game on 2026-10-07 at 21:34 UTC, right after depositing the rune.
+        const string text = "\"Data\"\t\"Jogador\"\t\"Item\"\t\"Encantamento\"\t\"Qualidade\"\t\"Quantidade\"\n" +
+                            "\"10/07/2026 21:31:56\"\t\"NillBlack\"\t\"Runa do Perito\"\t\"0\"\t\"1\"\t\"1\"\n" +
+                            "\"10/01/2026 23:41:41\"\t\"NillBlack\"\t\"Quebra-reino do Mestre\"\t\"3\"\t\"2\"\t\"-1\"\n" +
+                            "\"09/30/2026 21:44:08\"\t\"NillBlack\"\t\"Arco Plangente do Mestre\"\t\"3\"\t\"2\"\t\"-3\"";
+
+        var entries = ChestLogParser.Parse(text, new DateTime(2026, 10, 7, 21, 34, 35, DateTimeKind.Utc));
+
+        Assert.Equal(3, entries.Count);
+        Assert.Equal(new DateTime(2026, 10, 7, 21, 31, 56, DateTimeKind.Utc), entries[0].UtcTime);
+        Assert.Equal(new DateTime(2026, 9, 30, 21, 44, 8, DateTimeKind.Utc), entries[2].UtcTime);
+        Assert.Equal("T6_2H_AXE_AVALON@3", Items.FindByName(entries[1].ItemName, entries[1].Enchantment)?.UniqueName);
+        Assert.Equal(-3, entries[2].Amount);
     }
 
     [Theory]

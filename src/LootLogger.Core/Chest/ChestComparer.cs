@@ -265,11 +265,11 @@ public static class ChestComparer
     }
 
     /// <summary>
-    /// How much earlier than the pickup a deposit may look and still count. Covers PC clocks being off
-    /// and a chest log shown in Brazil time (UTC-3) instead of UTC, which is not confirmed yet; a
-    /// deposit from the day before is still left out.
+    /// How much earlier than the pickup a deposit may look and still count. The chest log is in UTC
+    /// (checked against a real deposit on 2026-10-07), but the loot log comes from players' PC clocks,
+    /// which can be a few minutes off.
     /// </summary>
-    public static readonly TimeSpan DepositClockSlack = TimeSpan.FromHours(4);
+    public static readonly TimeSpan DepositClockSlack = TimeSpan.FromMinutes(30);
 
     private static readonly TimeSpan DeathGap = TimeSpan.FromMinutes(2);
 

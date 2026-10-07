@@ -179,11 +179,7 @@ public sealed partial class MainViewModel
 
         if (chestText.Count > 0)
         {
-            // One paste per file, so the same tab dropped twice is not counted twice.
-            foreach (var text in chestText)
-            {
-                AddChestText(text);
-            }
+            AddChestTexts(chestText);
         }
         else if (lootFiles == 0)
         {
@@ -291,7 +287,7 @@ public sealed partial class MainViewModel
             text = string.Empty;
         }
 
-        AddChestText(text);
+        AddChestTexts([text]);
     }
 
     [RelayCommand]
@@ -303,11 +299,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        // Each file is its own paste, so the same tab saved twice is not counted twice.
-        foreach (var file in dialog.FileNames)
-        {
-            AddChestText(File.ReadAllText(file));
-        }
+        AddChestTexts(dialog.FileNames.Select(File.ReadAllText).ToList());
     }
 
     [RelayCommand]
@@ -318,28 +310,34 @@ public sealed partial class MainViewModel
         RecomputeChest();
     }
 
-    private void AddChestText(string text)
+    /// <summary>
+    /// Adds pasted chest logs (or files), each one a separate paste, to what is already loaded.
+    /// Lines already loaded are skipped one for one, so the same tab pasted twice counts once.
+    /// </summary>
+    private void AddChestTexts(IReadOnlyList<string> texts)
     {
-        var entries = ChestLogParser.Parse(text);
-        if (entries.Count == 0)
+        var read = 0;
+        var added = 0;
+        foreach (var text in texts)
+        {
+            var entries = ChestLogParser.Parse(text);
+            var fresh = ChestLogParser.NotYetPasted(_chestEntries, entries);
+            _chestEntries.AddRange(fresh);
+            read += entries.Count;
+            added += fresh.Count;
+        }
+
+        if (read == 0)
         {
             ChestMessage = L["ChestNothingRead"];
             return;
         }
 
-        var added = ChestLogParser.NotYetPasted(_chestEntries, entries);
-        if (added.Count == 0)
+        ChestMessage = L.Format("ChestPasteResult", added, read - added, _chestEntries.Count);
+        if (added > 0)
         {
-            ChestMessage = L["ChestAlreadyPasted"];
-            return;
+            RecomputeChest();
         }
-
-        _chestEntries.AddRange(added);
-        var repeated = entries.Count - added.Count;
-        ChestMessage = repeated > 0
-            ? L.Format("ChestLinesReadRepeats", _chestEntries.Count, repeated)
-            : L.Format("ChestLinesRead", _chestEntries.Count);
-        RecomputeChest();
     }
 
     // ---------- Comparison ----------

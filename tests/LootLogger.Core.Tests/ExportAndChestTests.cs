@@ -106,19 +106,56 @@ public class ExportAndChestTests
         Assert.Equal(-2, entries[1].Amount);
     }
 
-    [Fact]
-    public void ChestLog_SameTabPastedTwiceCountsOnce()
+    // Same rule as the guild site: each paste adds to what is loaded, a line equal to one already
+    // loaded (date, player, item, enchantment, quality, amount) is skipped one for one, and equal
+    // lines inside the same paste still count.
+    private static List<ChestLogEntry> PasteAll(params ChestLogEntry[][] pastes)
     {
-        var t = new DateTime(2026, 10, 7, 22, 0, 0, DateTimeKind.Utc);
-        var potion = new ChestLogEntry(t, "Ana", "Major Gigantify Potion", 0, 0, 1);
-        var sword = new ChestLogEntry(t.AddSeconds(5), "Ana", "Broadsword", 0, 1, 1);
-        var firstPaste = new[] { potion, potion, sword };
+        var loaded = new List<ChestLogEntry>();
+        foreach (var paste in pastes)
+        {
+            loaded.AddRange(ChestLogParser.NotYetPasted(loaded, paste));
+        }
 
-        Assert.Equal(3, ChestLogParser.NotYetPasted([], firstPaste).Count);
-        Assert.Empty(ChestLogParser.NotYetPasted(firstPaste, firstPaste));
+        return loaded;
+    }
 
-        var later = new ChestLogEntry(t.AddMinutes(3), "Bia", "Broadsword", 0, 1, 1);
-        Assert.Equal([later], ChestLogParser.NotYetPasted(firstPaste, [potion, potion, sword, later]));
+    private static readonly DateTime ChestTime = new(2026, 10, 7, 22, 0, 0, DateTimeKind.Utc);
+    private static readonly ChestLogEntry Potion = new(ChestTime, "Ana", "Major Gigantify Potion", 0, 0, 1);
+    private static readonly ChestLogEntry Sword = new(ChestTime.AddSeconds(5), "Ana", "Broadsword", 0, 1, 1);
+    private static readonly ChestLogEntry LaterSword = new(ChestTime.AddMinutes(3), "Bia", "Broadsword", 0, 1, 1);
+
+    [Fact]
+    public void ChestLog_SameTabPastedTwiceChangesNothing()
+    {
+        var tab = new[] { Potion, Sword };
+
+        Assert.Equal(tab, PasteAll(tab, tab));
+    }
+
+    [Fact]
+    public void ChestLog_TabPastedAgainWithNewDepositsAddsOnlyTheNewOnes()
+    {
+        var before = new[] { Potion, Sword };
+        var after = new[] { Potion, Sword, LaterSword };
+
+        Assert.Equal([Potion, Sword, LaterSword], PasteAll(before, after));
+    }
+
+    [Fact]
+    public void ChestLog_EqualLinesInTheSamePasteCountTwice()
+    {
+        var tab = new[] { Potion, Potion, Sword };
+
+        Assert.Equal(3, PasteAll(tab).Count);
+        Assert.Equal(3, PasteAll(tab, tab).Count);
+        Assert.Equal(2, PasteAll(tab).Count(e => e == Potion));
+    }
+
+    [Fact]
+    public void ChestLog_EachLoadedLineCancelsOnlyOneNewLine()
+    {
+        Assert.Equal(2, PasteAll([Potion], [Potion, Potion]).Count(e => e == Potion));
     }
 
     [Fact]

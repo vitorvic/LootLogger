@@ -52,6 +52,10 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private string _chestRate = "—";
 
+    /// <summary>Items players were carrying when they died.</summary>
+    [ObservableProperty]
+    private string _chestLost = "0";
+
     [ObservableProperty]
     private double _chestRateFraction;
 
@@ -208,7 +212,7 @@ public sealed partial class MainViewModel
             {
                 try
                 {
-                    row.Loot = LootFile.Read(file.FullName);
+                    (row.Loot, row.Kills) = LootFile.ParseAll(File.ReadAllText(file.FullName));
                     row.ReadAt = file.LastWriteTimeUtc;
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -317,12 +321,14 @@ public sealed partial class MainViewModel
             live.Detail = L.Format("LiveDetail", Format.Silver(_session.TotalItems));
         }
 
-        var logs = LootSources.Where(s => s.IsChecked).Select(s => s.IsLive ? _session.Loot : s.Loot).ToList();
+        var checkedSources = LootSources.Where(s => s.IsChecked).ToList();
+        var logs = checkedSources.Select(s => s.IsLive ? _session.Loot : s.Loot).ToList();
         var loot = logs.Count == 1 ? logs[0] : LootFile.Merge(logs);
+        var kills = LootFile.MergeKills(checkedSources.Select(s => s.IsLive ? _session.Kills : s.Kills));
         ChestMergedText = logs.Count > 1 ? L.Format("LogsMerged", logs.Count) : string.Empty;
 
         // Without a chest log everything counts as missing, which the cards show as "Pegou".
-        _chestResult = ChestComparer.Compare(loot, _chestEntries, _service.Items);
+        _chestResult = ChestComparer.Compare(loot, _chestEntries, _service.Items, kills);
         OnPropertyChanged(nameof(HasChestLog));
 
         var guilds = _chestResult.Select(r => r.Guild).Where(g => g.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase)
@@ -372,9 +378,14 @@ public sealed partial class MainViewModel
 
             var missing = player.Missing.Where(Shown).Select(m => new ItemTile(m, _service.Items)).ToList();
             var deposited = player.Kept.Where(Shown).Select(m => new ItemTile(m, _service.Items)).ToList();
+            var lost = player.LostOnDeath.Where(Shown).Select(m => new ItemTile(m, _service.Items)).ToList();
+            var deathText = player.Death is { } d
+                ? L.Format(d.KilledBy.Length > 0 ? "DiedLine" : "DiedLineNoKiller",
+                    d.UtcTime.ToString("dd/MM HH:mm"), d.KilledByGuild.Length > 0 ? $"{d.KilledBy} ({d.KilledByGuild})" : d.KilledBy)
+                : string.Empty;
             var card = HasChestLog
-                ? new ChestCard(player.Player, player.Guild, missing, deposited, [])
-                : new ChestCard(player.Player, player.Guild, [], [], missing);
+                ? new ChestCard(player.Player, player.Guild, missing, deposited, [], lost, deathText, compared: true)
+                : new ChestCard(player.Player, player.Guild, [], [], missing, lost, deathText, compared: false);
             if (card.Looted == 0 || (HasChestLog && OnlyDebtors && card.IsOk))
             {
                 continue;
@@ -392,6 +403,7 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(HasChestCards));
         OnPropertyChanged(nameof(ChestEmptyText));
 
+        ChestLost = Format.Silver(cards.Sum(c => c.LostCount));
         if (!HasChestLog)
         {
             ChestLooted = Format.Silver(cards.Sum(c => c.Looted));

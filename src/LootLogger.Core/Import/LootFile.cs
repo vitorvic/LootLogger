@@ -15,13 +15,17 @@ public static class LootFile
     public static List<LootEntry> Read(string path) => Parse(File.ReadAllText(path));
 
     /// <summary>The pickups in the text; empty when it isn't a loot file.</summary>
-    public static List<LootEntry> Parse(string text)
+    public static List<LootEntry> Parse(string text) => ParseAll(text).Loot;
+
+    /// <summary>Pickups and deaths in the text.</summary>
+    public static (List<LootEntry> Loot, List<KillEntry> Kills) ParseAll(string text)
     {
         var result = new List<LootEntry>();
+        var kills = new List<KillEntry>();
         var lines = text.Split('\n');
         if (lines.Length == 0)
         {
-            return result;
+            return (result, kills);
         }
 
         var header = lines[0].Trim().TrimStart('﻿').Split(';');
@@ -33,7 +37,7 @@ public static class LootFile
 
         if (!col.ContainsKey("timestamp_utc") || !col.ContainsKey("looted_by__name") || !col.ContainsKey("item_id"))
         {
-            return result;
+            return (result, kills);
         }
 
         foreach (var rawLine in lines.Skip(1))
@@ -49,10 +53,20 @@ public static class LootFile
 
             var looter = Get("looted_by__name");
             var itemId = Get("item_id");
-            if (looter.Length == 0 || itemId.Length == 0
-                || !DateTime.TryParse(Get("timestamp_utc"), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var time))
+            if (!DateTime.TryParse(Get("timestamp_utc"), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var time))
+            {
+                continue;
+            }
+
+            if (looter.Length == 0 || itemId.Length == 0)
             {
                 // Death rows have no looter.
+                var died = Get("died");
+                if (died.Length > 0)
+                {
+                    kills.Add(new KillEntry(time, died, Get("died_player_guild"), string.Empty, Get("killed_by"), Get("killed_by_guild"), string.Empty, Get("cluster")));
+                }
+
                 continue;
             }
 
@@ -75,7 +89,28 @@ public static class LootFile
                 Get("cluster")));
         }
 
-        return result;
+        return (result, kills);
+    }
+
+    /// <summary>Joins the deaths of several logs; one death seen by two loggers counts once.</summary>
+    public static List<KillEntry> MergeKills(IEnumerable<IReadOnlyList<KillEntry>> logs)
+    {
+        var merged = new List<KillEntry>();
+        foreach (var log in logs)
+        {
+            var before = merged.Count;
+            foreach (var kill in log)
+            {
+                var seen = merged.Take(before).Any(k =>
+                    string.Equals(k.Died, kill.Died, StringComparison.OrdinalIgnoreCase) && (k.UtcTime - kill.UtcTime).Duration() <= SameEventWindow);
+                if (!seen)
+                {
+                    merged.Add(kill);
+                }
+            }
+        }
+
+        return merged.OrderBy(k => k.UtcTime).ToList();
     }
 
     /// <summary>

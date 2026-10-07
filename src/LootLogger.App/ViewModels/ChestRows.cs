@@ -34,6 +34,9 @@ public sealed partial class LootSourceRow : ObservableObject
     /// <summary>The pickups read from the file.</summary>
     public IReadOnlyList<LootEntry> Loot { get; set; } = [];
 
+    /// <summary>The deaths read from the file.</summary>
+    public IReadOnlyList<KillEntry> Kills { get; set; } = [];
+
     /// <summary>When the file was read, to read it again after it changes.</summary>
     public DateTime ReadAt { get; set; }
 }
@@ -88,7 +91,15 @@ public sealed class ItemTile : ObservableObject
 /// One player in Comparar Baú: what they still owe and what they already put in the chest.
 /// Before a chest log is pasted it only lists what they picked up.
 /// </summary>
-public sealed partial class ChestCard(string player, string guild, IReadOnlyList<ItemTile> missing, IReadOnlyList<ItemTile> kept, IReadOnlyList<ItemTile> picked)
+public sealed partial class ChestCard(
+    string player,
+    string guild,
+    IReadOnlyList<ItemTile> missing,
+    IReadOnlyList<ItemTile> kept,
+    IReadOnlyList<ItemTile> picked,
+    IReadOnlyList<ItemTile> lost,
+    string deathText,
+    bool compared)
     : ObservableObject
 {
     /// <summary>Closed cards show one row of items per group.</summary>
@@ -103,20 +114,30 @@ public sealed partial class ChestCard(string player, string guild, IReadOnlyList
     public IReadOnlyList<ItemTile> Missing => missing;
     public IReadOnlyList<ItemTile> Kept => kept;
     public IReadOnlyList<ItemTile> Picked => picked;
+    public IReadOnlyList<ItemTile> Lost => lost;
+
+    /// <summary>"morreu 06/10 22:14 UTC · morto por faca02 (Outlimits)".</summary>
+    public string DeathText => deathText;
 
     public int MissingCount => missing.Sum(t => t.Quantity);
     public int KeptCount => kept.Sum(t => t.Quantity);
     public int PickedCount => picked.Sum(t => t.Quantity);
-    public int Looted => MissingCount + KeptCount + PickedCount;
+    public int LostCount => lost.Sum(t => t.Quantity);
+    public int Looted => MissingCount + KeptCount + PickedCount + LostCount;
     public long MissingValue => missing.Sum(t => t.Item.TotalValue);
     public long PickedValue => picked.Sum(t => t.Item.TotalValue);
 
     public bool HasMissing => missing.Count > 0;
     public bool HasKept => kept.Count > 0;
     public bool HasPicked => picked.Count > 0;
+    public bool HasLost => lost.Count > 0;
 
     /// <summary>Compared with a chest log (otherwise only the pickups are known).</summary>
-    public bool IsCompared => !HasPicked;
+    public bool IsCompared => compared;
+
+    /// <summary>Column texts; "—" before a chest log is pasted.</summary>
+    public string KeptText => IsCompared ? KeptCount.ToString() : "—";
+    public string MissingText => IsCompared ? MissingCount.ToString() : "—";
 
     public bool IsOk => IsCompared && MissingCount == 0;
     public bool IsNone => KeptCount == 0 && MissingCount > 0;

@@ -20,8 +20,11 @@ public sealed record PlayerComparison(
     int Looted,
     int Deposited,
     IReadOnlyList<ItemAmount> Missing,
-    IReadOnlyList<ItemAmount> Kept)
+    IReadOnlyList<ItemAmount> Kept,
+    IReadOnlyList<ItemAmount> LostOnDeath,
+    KillEntry? Death)
 {
+    public int LostCount => LostOnDeath.Sum(m => m.Quantity);
     public int MissingCount => Missing.Sum(m => m.Quantity);
     public long MissingValue => Missing.Sum(m => m.Quantity * m.UnitValue);
 }
@@ -110,9 +113,16 @@ public static class ChestComparer
     /// <summary>
     /// For each player who looted, counts what they picked up against what they deposited.
     /// Deposits are matched to loot by item id; withdrawals (negative amounts) are ignored.
+    /// Items not deposited that were picked up before the player died are counted as lost on death, not missing.
     /// </summary>
-    public static List<PlayerComparison> Compare(IEnumerable<LootEntry> loot, IEnumerable<ChestLogEntry> chest, ItemDatabase items)
+    public static List<PlayerComparison> Compare(
+        IEnumerable<LootEntry> loot, IEnumerable<ChestLogEntry> chest, ItemDatabase items, IEnumerable<KillEntry>? kills = null)
     {
+        var lootList = loot as IReadOnlyCollection<LootEntry> ?? loot.ToList();
+        var lastDeath = (kills ?? []).Concat(DeathsFromBodies(lootList))
+            .GroupBy(k => k.Died, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => LatestDeath(g), StringComparer.OrdinalIgnoreCase);
+
         var deposits = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in chest.Where(c => c.Amount > 0))
         {
@@ -122,12 +132,14 @@ public static class ChestComparer
         }
 
         var result = new List<PlayerComparison>();
-        foreach (var player in loot.GroupBy(l => l.LootedByName, StringComparer.OrdinalIgnoreCase))
+        foreach (var player in lootList.GroupBy(l => l.LootedByName, StringComparer.OrdinalIgnoreCase))
         {
             var remaining = deposits.TryGetValue(player.Key, out var d) ? new Dictionary<string, int>(d, StringComparer.OrdinalIgnoreCase) : [];
             var deposited = 0;
             var missing = new List<ItemAmount>();
             var kept = new List<ItemAmount>();
+            var lost = new List<ItemAmount>();
+            var death = lastDeath.GetValueOrDefault(player.Key);
 
             foreach (var item in player.GroupBy(l => l.ItemId))
             {
@@ -142,9 +154,18 @@ public static class ChestComparer
                     kept.Add(new ItemAmount(item.Key, first.ItemNameEnglish, matched, first.UnitValue));
                 }
 
-                if (looted > matched)
+                // Deposits go to the pickups after the death first: what was carried when dying was dropped.
+                var notDeposited = looted - matched;
+                var beforeDeath = death is null ? 0 : item.Where(l => l.UtcTime <= death.UtcTime).Sum(l => l.Quantity);
+                var lostHere = Math.Min(notDeposited, beforeDeath);
+                if (lostHere > 0)
                 {
-                    missing.Add(new ItemAmount(item.Key, first.ItemNameEnglish, looted - matched, first.UnitValue));
+                    lost.Add(new ItemAmount(item.Key, first.ItemNameEnglish, lostHere, first.UnitValue));
+                }
+
+                if (notDeposited > lostHere)
+                {
+                    missing.Add(new ItemAmount(item.Key, first.ItemNameEnglish, notDeposited - lostHere, first.UnitValue));
                 }
             }
 
@@ -154,9 +175,49 @@ public static class ChestComparer
                 player.Sum(l => l.Quantity),
                 deposited,
                 missing.OrderByDescending(m => m.TotalValue).ToList(),
-                kept.OrderByDescending(m => m.TotalValue).ToList()));
+                kept.OrderByDescending(m => m.TotalValue).ToList(),
+                lost.OrderByDescending(m => m.TotalValue).ToList(),
+                lost.Count > 0 ? death : null));
         }
 
-        return result.OrderByDescending(r => r.MissingValue).ThenByDescending(r => r.MissingCount).ToList();
+        return result.OrderByDescending(r => r.MissingValue).ThenByDescending(r => r.MissingCount).ThenByDescending(r => r.LostCount).ToList();
+    }
+
+    private static readonly TimeSpan DeathGap = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// Logs without death rows still show deaths: someone looting a player's body means that player died.
+    /// Each run of body loot is one death, placed at its first pickup.
+    /// </summary>
+    private static IEnumerable<KillEntry> DeathsFromBodies(IEnumerable<LootEntry> loot)
+    {
+        foreach (var body in loot
+                     .Where(l => l.LootedFromName.Length > 0 && l.LootedFromName != LootTracker.MobName && l.LootedFromName != LootTracker.ChestName)
+                     .GroupBy(l => l.LootedFromName, StringComparer.OrdinalIgnoreCase))
+        {
+            DateTime? last = null;
+            foreach (var entry in body.OrderBy(l => l.UtcTime))
+            {
+                if (last is null || entry.UtcTime - last.Value > DeathGap)
+                {
+                    yield return new KillEntry(entry.UtcTime, body.Key, entry.LootedFromGuild, entry.LootedFromAlliance, string.Empty, string.Empty, string.Empty, entry.Cluster);
+                }
+
+                last = entry.UtcTime;
+            }
+        }
+    }
+
+    /// <summary>The last death; a real death row (with the killer) wins over one guessed from body loot.</summary>
+    private static KillEntry LatestDeath(IEnumerable<KillEntry> deaths)
+    {
+        var latest = deaths.MaxBy(k => k.UtcTime)!;
+        if (latest.KilledBy.Length > 0)
+        {
+            return latest;
+        }
+
+        return deaths.Where(k => k.KilledBy.Length > 0 && (latest.UtcTime - k.UtcTime).Duration() <= DeathGap)
+            .MaxBy(k => k.UtcTime) ?? latest;
     }
 }

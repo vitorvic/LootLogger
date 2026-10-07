@@ -24,6 +24,47 @@ public class LootFileTests
     }
 
     [Fact]
+    public void ParseAll_ReadsDeaths()
+    {
+        var kill = new KillEntry(new DateTime(2026, 10, 6, 22, 14, 0, DateTimeKind.Utc), "Ana", "PlVAS", "", "faca02", "Outlimits", "", "Sunfang Cliffs");
+
+        var (_, kills) = LootFile.ParseAll(CsvExporter.ToCsv([], [kill]));
+
+        Assert.Equal(kill, Assert.Single(kills));
+    }
+
+    [Fact]
+    public void Compare_ItemsCarriedWhenDyingAreLostNotMissing()
+    {
+        var items = LootLogger.Core.Data.ItemDatabase.LoadBuiltIn();
+        // Picked a bag, died, then picked a cape and a sword; only the sword reached the chest.
+        var loot = new[] { Loot("Ana", "T6_BAG", 1, 0), Loot("Ana", "T5_CAPE", 1, 60), Loot("Ana", "T4_MAIN_SWORD", 1, 61) };
+        var death = new KillEntry(loot[0].UtcTime.AddSeconds(30), "Ana", "PlVAS", "", "faca02", "Outlimits", "", "Sunfang Cliffs");
+        var sword = items.GetByUniqueName("T4_MAIN_SWORD")!;
+        var chest = new[] { new LootLogger.Core.Chest.ChestLogEntry(loot[2].UtcTime.AddMinutes(5), "Ana", sword.EnglishName, 0, 1, 1) };
+
+        var ana = Assert.Single(LootLogger.Core.Chest.ChestComparer.Compare(loot, chest, items, [death]));
+
+        Assert.Equal("T6_BAG", Assert.Single(ana.LostOnDeath).ItemId);
+        Assert.Equal("T5_CAPE", Assert.Single(ana.Missing).ItemId);
+        Assert.Equal(1, ana.Deposited);
+        Assert.Equal(death, ana.Death);
+    }
+
+    [Fact]
+    public void Compare_SeesADeathWhenSomeoneLootsTheBody()
+    {
+        var items = LootLogger.Core.Data.ItemDatabase.LoadBuiltIn();
+        // No death rows: Ana picked a bag, then Bia looted Ana's body.
+        var loot = new[] { Loot("Ana", "T6_BAG", 1, 0), Loot("Bia", "T5_CAPE", 1, 40, from: "Ana") };
+
+        var ana = LootLogger.Core.Chest.ChestComparer.Compare(loot, [], items).Single(p => p.Player == "Ana");
+
+        Assert.Equal("T6_BAG", Assert.Single(ana.LostOnDeath).ItemId);
+        Assert.Empty(ana.Missing);
+    }
+
+    [Fact]
     public void Parse_ReturnsNothingForOtherText()
     {
         Assert.Empty(LootFile.Parse("Date,Player,Item,Enchantment,Quality,Amount\n\"10/06/2026 21:58:00\",\"NillBlack\",\"Elmo\",\"2\",\"1\",\"1\""));

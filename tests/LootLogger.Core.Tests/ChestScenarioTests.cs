@@ -192,6 +192,28 @@ public class ChestScenarioTests
     }
 
     [Fact]
+    public void Week_ExtraDepositedAfterTheFirstFight_DoesNotCoverTheSecond()
+    {
+        // Monday Ana deposited two swords (one from her own bank); Wednesday's sword she kept.
+        var loot = new[] { Pick("Ana", "T4_MAIN_SWORD"), Pick("Ana", "T4_MAIN_SWORD", minutes: 2 * 24 * 60) };
+
+        var ana = Result("Ana", loot, Paste([Line(Fight.AddHours(1), "Ana", "T4_MAIN_SWORD", 2)]));
+
+        Assert.Equal((1, 1), (ana.Deposited, ana.MissingCount));
+    }
+
+    [Fact]
+    public void Week_DeathInTheFirstFight_DoesNotHideWhatWasKeptFromTheSecond()
+    {
+        // Ana died on Monday carrying a sword and deposited one from her bank; Wednesday's sword she kept.
+        var loot = new[] { Pick("Ana", "T4_MAIN_SWORD"), Pick("Ana", "T4_MAIN_SWORD", minutes: 2 * 24 * 60) };
+
+        var ana = Result("Ana", loot, Paste([Line(Fight.AddHours(1), "Ana", "T4_MAIN_SWORD", 1)]), [Death("Ana", 10)]);
+
+        Assert.Equal((1, 1, 0), (ana.Deposited, ana.MissingCount, ana.LostCount));
+    }
+
+    [Fact]
     public void Week_DeathInTheSecondFight_TheDepositCoversTheFirst()
     {
         // Monday's sword Ana kept and deposited on Thursday; Wednesday's sword she dropped when she died.
@@ -200,6 +222,16 @@ public class ChestScenarioTests
         var ana = Result("Ana", loot, Paste([Line(Fight.AddDays(3), "Ana", "T4_MAIN_SWORD", 1)]), [Death("Ana", 2 * 24 * 60 + 10)]);
 
         Assert.Equal((1, 0, 1), (ana.Deposited, ana.MissingCount, ana.LostCount));
+    }
+
+    [Fact]
+    public void Deposit_InThePauseOfALongFight_CoversOnlyWhatWasPickedUpBeforeIt()
+    {
+        var loot = new[] { Pick("Ana", "T4_RUNE", 10), Pick("Ana", "T4_RUNE", 5, 55) };
+
+        var ana = Result("Ana", loot, Paste([Line(Fight.AddMinutes(20), "Ana", "T4_RUNE", 15)]));
+
+        Assert.Equal((10, 5), (ana.Deposited, ana.MissingCount));
     }
 
     [Fact]

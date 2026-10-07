@@ -181,7 +181,7 @@ public static class ChestComparer
 {
     /// <summary>
     /// For each player who looted, counts what they picked up against what they deposited.
-    /// Deposits are matched to loot by item id and only count when made after the item was picked up;
+    /// Deposits are matched to loot by item id and only stand for what was picked up before them;
     /// withdrawals (negative amounts) are ignored, since only officers can take items out.
     /// Items not deposited that were picked up before the player died in the same fight are counted as lost on death, not missing.
     /// </summary>
@@ -211,18 +211,7 @@ public static class ChestComparer
         var result = new List<PlayerComparison>();
         foreach (var player in lootList.Where(l => !IsTrash(l.ItemId)).GroupBy(l => l.LootedByName, StringComparer.OrdinalIgnoreCase))
         {
-            // Only deposits made after the player first picked the item up count, so the same item
-            // deposited before the fight (yesterday, say) does not cover today's loot.
-            var remaining = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            if (deposits.TryGetValue(player.Key, out var d))
-            {
-                foreach (var item in player.GroupBy(l => l.ItemId))
-                {
-                    var from = item.Min(l => l.UtcTime) - DepositClockSlack;
-                    remaining[item.Key] = d.TryGetValue(item.Key, out var list) ? list.Where(e => e.UtcTime >= from).Sum(e => e.Amount) : 0;
-                }
-            }
-
+            var playerDeposits = deposits.GetValueOrDefault(player.Key);
             var deposited = 0;
             var missing = new List<ItemAmount>();
             var kept = new List<ItemAmount>();
@@ -234,10 +223,16 @@ public static class ChestComparer
 
             foreach (var item in player.GroupBy(l => l.ItemId))
             {
-                var looted = item.Sum(l => l.Quantity);
-                var available = remaining.GetValueOrDefault(item.Key);
-                var matched = Math.Min(looted, available);
-                remaining[item.Key] = available - matched;
+                var itemDeposits = playerDeposits?.GetValueOrDefault(item.Key) ?? [];
+                var dropped = item.Where(l => DeathAfter(l) is not null).ToList();
+                var carried = item.Where(l => DeathAfter(l) is null).ToList();
+
+                // What was carried when dying was dropped, so deposits go to the rest first: the rest
+                // that no deposit covers is missing, and the dropped pickups no deposit covers are lost.
+                var matched = Covered(item, itemDeposits);
+                var carriedMatched = Covered(carried, itemDeposits);
+                var missingHere = carried.Sum(l => l.Quantity) - carriedMatched;
+                var lostHere = dropped.Sum(l => l.Quantity) - (matched - carriedMatched);
                 deposited += matched;
                 var first = item.OrderByDescending(l => l.UnitValue).First();
                 if (matched > 0)
@@ -245,20 +240,16 @@ public static class ChestComparer
                     kept.Add(new ItemAmount(item.Key, first.ItemNameEnglish, matched, first.UnitValue));
                 }
 
-                // Deposits go to the pickups after the death first: what was carried when dying was dropped.
-                var notDeposited = looted - matched;
-                var beforeDeath = item.Where(l => DeathAfter(l) is not null).Sum(l => l.Quantity);
-                var lostHere = Math.Min(notDeposited, beforeDeath);
                 if (lostHere > 0)
                 {
                     lost.Add(new ItemAmount(item.Key, first.ItemNameEnglish, lostHere, first.UnitValue));
-                    var death = item.Select(DeathAfter).OfType<KillEntry>().MaxBy(k => k.UtcTime)!;
+                    var death = dropped.Select(DeathAfter).OfType<KillEntry>().MaxBy(k => k.UtcTime)!;
                     shownDeath = shownDeath is null || death.UtcTime > shownDeath.UtcTime ? death : shownDeath;
                 }
 
-                if (notDeposited > lostHere)
+                if (missingHere > 0)
                 {
-                    missing.Add(new ItemAmount(item.Key, first.ItemNameEnglish, notDeposited - lostHere, first.UnitValue));
+                    missing.Add(new ItemAmount(item.Key, first.ItemNameEnglish, missingHere, first.UnitValue));
                 }
             }
 
@@ -274,6 +265,33 @@ public static class ChestComparer
         }
 
         return result.OrderByDescending(r => r.MissingValue).ThenByDescending(r => r.MissingCount).ThenByDescending(r => r.LostCount).ToList();
+    }
+
+    /// <summary>
+    /// How many of the pickups the deposits can stand for. A deposit stands for what was picked up before it,
+    /// so the same item deposited before the fight, or extra deposited after an earlier fight of the week,
+    /// does not cover what was picked up later.
+    /// </summary>
+    private static int Covered(IEnumerable<LootEntry> pickups, IReadOnlyList<ChestLogEntry> deposits)
+    {
+        // Latest pickup first: every deposit it can use, all earlier pickups can use too.
+        var latestFirst = deposits.OrderByDescending(d => d.UtcTime).ToList();
+        var next = 0;
+        var available = 0;
+        var covered = 0;
+        foreach (var pickup in pickups.OrderByDescending(l => l.UtcTime))
+        {
+            while (next < latestFirst.Count && latestFirst[next].UtcTime >= pickup.UtcTime - DepositClockSlack)
+            {
+                available += latestFirst[next++].Amount;
+            }
+
+            var take = Math.Min(pickup.Quantity, available);
+            available -= take;
+            covered += take;
+        }
+
+        return covered;
     }
 
     /// <summary>

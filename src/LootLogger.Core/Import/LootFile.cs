@@ -178,7 +178,7 @@ public static class LootFile
     /// <summary>
     /// How much to add to the times of <paramref name="log"/> so they match <paramref name="merged"/>:
     /// the time gap shared by the most pickups both logs saw (same looter, item, amount and body).
-    /// Zero when the logs have nothing in common.
+    /// Zero when the logs have too little in common to tell (two different fights, say).
     /// </summary>
     public static TimeSpan ClockOffset(IReadOnlyList<LootEntry> merged, IReadOnlyList<LootEntry> log)
     {
@@ -187,13 +187,13 @@ public static class LootFile
             return TimeSpan.Zero;
         }
 
-        var byKey = merged.ToLookup(Key);
-        var gaps = new List<double>();
-        foreach (var entry in log)
+        var byKey = merged.Select((e, i) => (Entry: e, Index: i)).ToLookup(x => Key(x.Entry));
+        var gaps = new List<(double Seconds, int Log, int Merged)>();
+        for (var j = 0; j < log.Count; j++)
         {
-            foreach (var other in byKey[Key(entry)])
+            foreach (var other in byKey[Key(log[j])])
             {
-                gaps.Add((other.UtcTime - entry.UtcTime).TotalSeconds);
+                gaps.Add(((other.Entry.UtcTime - log[j].UtcTime).TotalSeconds, j, other.Index));
             }
         }
 
@@ -202,28 +202,51 @@ public static class LootFile
             return TimeSpan.Zero;
         }
 
-        // The gap most other gaps agree with (within the same-event window).
-        gaps.Sort();
+        // The gap most pickups agree with (within the same-event window). Each pickup counts once,
+        // however many look-alikes (three equal potions from one body, say) the other log has.
+        gaps.Sort((a, b) => a.Seconds.CompareTo(b.Seconds));
         var window = SameEventWindow.TotalSeconds;
+        var logUses = new Dictionary<int, int>();
+        var mergedUses = new Dictionary<int, int>();
         var best = 0.0;
         var bestCount = 0;
         var start = 0;
         for (var end = 0; end < gaps.Count; end++)
         {
-            while (gaps[end] - gaps[start] > window)
+            Use(logUses, gaps[end].Log, 1);
+            Use(mergedUses, gaps[end].Merged, 1);
+            while (gaps[end].Seconds - gaps[start].Seconds > window)
             {
+                Use(logUses, gaps[start].Log, -1);
+                Use(mergedUses, gaps[start].Merged, -1);
                 start++;
             }
 
-            if (end - start + 1 > bestCount)
+            var count = Math.Min(logUses.Count, mergedUses.Count);
+            if (count > bestCount)
             {
-                bestCount = end - start + 1;
-                best = gaps[(start + end) / 2];
+                bestCount = count;
+                best = gaps[(start + end) / 2].Seconds;
             }
         }
 
-        // A couple of chance matches are not enough to move a whole log.
-        return bestCount >= 3 && Math.Abs(best) > window / 2 ? TimeSpan.FromSeconds(best) : TimeSpan.Zero;
+        // A few chance matches are not enough to move a whole log: two logs of one fight share most
+        // of their pickups (84% to 98% in real logs), two different fights (a week of logs, say) almost none.
+        var needed = Math.Max(3, Math.Min(merged.Count, log.Count) / 10);
+        return bestCount >= needed && Math.Abs(best) > window / 2 ? TimeSpan.FromSeconds(best) : TimeSpan.Zero;
+
+        static void Use(Dictionary<int, int> uses, int index, int change)
+        {
+            var count = uses.GetValueOrDefault(index) + change;
+            if (count == 0)
+            {
+                uses.Remove(index);
+            }
+            else
+            {
+                uses[index] = count;
+            }
+        }
     }
 
     private static (string, string, int, string) Key(LootEntry e) =>

@@ -350,6 +350,34 @@ public class ChestScenarioTests
         Assert.Equal(2, loot.Count);
     }
 
+    [Fact]
+    public void LootFiles_OfTwoFightsOnDifferentDays_AreNotMixed()
+    {
+        // Ana took three equal potions from the same enemy on Monday and one more on Wednesday.
+        var monday = new[] { Pick("Ana", "T6_POTION_HEAL"), Pick("Ana", "T6_POTION_HEAL", minutes: 0.02), Pick("Ana", "T6_POTION_HEAL", minutes: 0.04) };
+        var wednesday = new[] { Pick("Ana", "T6_POTION_HEAL", minutes: 2 * 24 * 60) };
+
+        var (loot, _) = LootFile.MergeAll([(monday, []), (wednesday, [])]);
+
+        Assert.Equal(4, loot.Sum(l => l.Quantity));
+        Assert.Contains(loot, l => l.UtcTime == wednesday[0].UtcTime);
+    }
+
+    [Fact]
+    public void LootFiles_OfTwoBigFightsWithAFewLookAlikes_AreNotMixed()
+    {
+        // Both fights have three equal potions from the same enemy, picked up by Ana within seconds.
+        var potions = Enumerable.Range(0, 3).Select(i => Pick("Ana", "T6_POTION_HEAL", minutes: i / 60.0)).ToList();
+        var monday = Enumerable.Range(0, 57).Select(i => Pick("P" + i, "T6_BAG", minutes: i)).Concat(potions).ToList();
+        var wednesday = Enumerable.Range(100, 57).Select(i => Pick("P" + i, "T6_BAG", minutes: i - 100)).Concat(potions)
+            .Select(l => l with { UtcTime = l.UtcTime.AddDays(2) }).ToList();
+
+        var (loot, _) = LootFile.MergeAll([(monday, []), (wednesday, [])]);
+
+        Assert.Equal(120, loot.Sum(l => l.Quantity));
+        Assert.Equal(60, loot.Count(l => l.UtcTime > Fight.AddDays(1)));
+    }
+
     // ---------- Everything together ----------
 
     [Fact]

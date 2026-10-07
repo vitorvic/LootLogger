@@ -13,7 +13,8 @@ public sealed class LootSession
 {
     private readonly List<LootEntry> _loot = [];
     private readonly List<KillEntry> _kills = [];
-    private readonly string? _autosavePath;
+    private readonly string? _autosaveFolder;
+    private string? _autosavePath;
     private DateTime? _captureStartedUtc;
     private TimeSpan _activeBefore;
 
@@ -23,13 +24,17 @@ public sealed class LootSession
         if (autosaveFolder is not null)
         {
             Directory.CreateDirectory(autosaveFolder);
-            _autosavePath = Path.Combine(autosaveFolder, CsvExporter.DefaultFileName(startedUtc));
+            _autosaveFolder = autosaveFolder;
         }
     }
 
     public DateTime StartedUtc { get; }
 
+    /// <summary>The CSV file, named when the first row is written; null before that.</summary>
     public string? AutosavePath => _autosavePath;
+
+    /// <summary>Who is running the program; goes into the file name if known before the first row.</summary>
+    public string? Owner { get; set; }
 
     public IReadOnlyList<LootEntry> Loot => _loot;
 
@@ -71,10 +76,12 @@ public sealed class LootSession
 
     private void Append(string row)
     {
-        if (_autosavePath is null)
+        if (_autosaveFolder is null)
         {
             return;
         }
+
+        _autosavePath ??= UniquePath(_autosaveFolder, CsvExporter.DefaultFileName(StartedUtc, Owner));
 
         try
         {
@@ -86,5 +93,16 @@ public sealed class LootSession
         {
             // The file may be open in Excel; the row stays in memory and goes into the next export.
         }
+    }
+
+    private static string UniquePath(string folder, string fileName)
+    {
+        var path = Path.Combine(folder, fileName);
+        for (var n = 2; File.Exists(path); n++)
+        {
+            path = Path.Combine(folder, $"{Path.GetFileNameWithoutExtension(fileName)} ({n}){Path.GetExtension(fileName)}");
+        }
+
+        return path;
     }
 }

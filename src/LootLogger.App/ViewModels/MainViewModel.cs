@@ -213,7 +213,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            FileName = CsvExporter.DefaultFileName(DateTime.UtcNow),
+            FileName = CsvExporter.DefaultFileName(DateTime.UtcNow, Player?.Name),
             DefaultExt = ".csv",
             Filter = "CSV (*.csv)|*.csv",
             InitialDirectory = EnsureFolder(_settings.ExportFolder)
@@ -231,7 +231,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var wasCapturing = IsCapturing;
         _session.MarkCaptureStopped(DateTime.UtcNow);
-        _session = new LootSession(DateTime.UtcNow, _settings.ExportFolder);
+        _session = new LootSession(DateTime.UtcNow, _settings.ExportFolder) { Owner = Player?.Name };
         if (wasCapturing)
         {
             _session.MarkCaptureStarted(DateTime.UtcNow);
@@ -292,6 +292,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void OnPlayer(LocalPlayer player)
     {
         Player = player;
+        _session.Owner = player.Name;
         foreach (var row in LootRows)
         {
             row.IsMine = IsMine(row.Entry);

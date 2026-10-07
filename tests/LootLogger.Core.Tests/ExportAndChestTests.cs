@@ -74,12 +74,14 @@ public class ExportAndChestTests
         var folder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         try
         {
-            var session = new LootSession(DateTime.UtcNow, folder);
+            var session = new LootSession(new DateTime(2026, 10, 6, 21, 56, 0, DateTimeKind.Utc), folder) { Owner = "NillBlack" };
             session.Add(new LootEntry(DateTime.UtcNow, "A", "", "", 0, "X", "X", 2, "", "", "", 10, ""));
             session.Add(new LootEntry(DateTime.UtcNow, "B", "", "", 0, "Y", "Y", 1, "", "", "", 5, ""));
 
             var lines = File.ReadAllLines(session.AutosavePath!);
             Assert.Equal(3, lines.Length);
+            var local = new DateTime(2026, 10, 6, 21, 56, 0, DateTimeKind.Utc).ToLocalTime();
+            Assert.Equal($"Loot {local:dd-MM-yyyy} {local:HH}h{local:mm} NillBlack.csv", Path.GetFileName(session.AutosavePath));
             Assert.Equal(3, session.TotalItems);
             Assert.Equal(25, session.TotalValue);
         }

@@ -16,6 +16,9 @@ public static class AppPaths
 
     public static string MarketValues => Path.Combine(DataFolder, "market-values.json");
 
+    /// <summary>Hidden copy of each session, written as it happens, in case the program closes mid-fight.</summary>
+    public static string BackupFolder => Path.Combine(DataFolder, "backup");
+
     public static string DefaultExportFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "LootLogger", "Sessões");
 }

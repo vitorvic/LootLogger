@@ -15,8 +15,6 @@ namespace LootLogger.App.ViewModels;
 /// <summary>Comparar Baú: loot logs on the left, chest log on top, one card per player.</summary>
 public sealed partial class MainViewModel
 {
-    private const int MaxFolderFiles = 40;
-
     private readonly List<ChestLogEntry> _chestEntries = [];
     private readonly List<string> _pickedFiles = [];
     private List<PlayerComparison> _chestResult = [];
@@ -185,29 +183,10 @@ public sealed partial class MainViewModel
 
     private readonly HashSet<string> _checkOnNextRefresh = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Lists the saved sessions in the export folder plus files picked by hand.</summary>
+    /// <summary>Lists the files picked or dropped by hand, newest first.</summary>
     private void RefreshLootSources()
     {
-        var files = new List<FileInfo>();
-        try
-        {
-            var folder = new DirectoryInfo(_settings.ExportFolder);
-            if (folder.Exists)
-            {
-                files.AddRange(folder.GetFiles("*.csv").OrderByDescending(f => f.LastWriteTimeUtc).Take(MaxFolderFiles));
-            }
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-        }
-
-        foreach (var path in _pickedFiles)
-        {
-            if (File.Exists(path) && !files.Any(f => string.Equals(f.FullName, path, StringComparison.OrdinalIgnoreCase)))
-            {
-                files.Insert(0, new FileInfo(path));
-            }
-        }
+        var files = _pickedFiles.AsEnumerable().Reverse().Where(File.Exists).Select(p => new FileInfo(p)).ToList();
 
         // The live session's own file is the same loot as "Sessão atual".
         var ownFile = _session.AutosavePath is { } own ? Path.GetFullPath(own) : null;

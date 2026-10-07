@@ -44,7 +44,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _service = service;
         _settings = settings;
         _dispatcher = Application.Current.Dispatcher;
-        _session = new LootSession(DateTime.UtcNow, settings.ExportFolder);
+        _session = new LootSession(DateTime.UtcNow, AppPaths.BackupFolder);
 
         LootView = CollectionViewSource.GetDefaultView(LootRows);
         LootView.Filter = FilterLoot;
@@ -232,7 +232,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var wasCapturing = IsCapturing;
         _session.MarkCaptureStopped(DateTime.UtcNow);
-        _session = new LootSession(DateTime.UtcNow, _settings.ExportFolder) { Owner = Player?.Name };
+        _session = new LootSession(DateTime.UtcNow, AppPaths.BackupFolder) { Owner = Player?.Name };
         if (wasCapturing)
         {
             _session.MarkCaptureStarted(DateTime.UtcNow);

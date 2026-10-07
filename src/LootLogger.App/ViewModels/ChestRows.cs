@@ -88,8 +88,13 @@ public sealed class ItemTile : ObservableObject
 /// One player in Comparar Baú: what they still owe and what they already put in the chest.
 /// Before a chest log is pasted it only lists what they picked up.
 /// </summary>
-public sealed class ChestCard(string player, string guild, IReadOnlyList<ItemTile> missing, IReadOnlyList<ItemTile> kept, IReadOnlyList<ItemTile> picked)
+public sealed partial class ChestCard(string player, string guild, IReadOnlyList<ItemTile> missing, IReadOnlyList<ItemTile> kept, IReadOnlyList<ItemTile> picked)
+    : ObservableObject
 {
+    /// <summary>Closed cards show one row of items per group.</summary>
+    [ObservableProperty]
+    private bool _isExpanded;
+
     public string Player => player;
     public string Guild => guild;
     public bool HasGuild => guild.Length > 0;

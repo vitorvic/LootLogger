@@ -124,6 +124,51 @@
             <StackPanel Orientation="Horizontal" />
         </ItemsPanelTemplate>
 
+        <!-- Item list inside a card: one row while the card is closed -->
+        <Style x:Key="CardItems" TargetType="ItemsControl">
+            <Setter Property="ItemsPanel" Value="{StaticResource WrapItems}" />
+            <Setter Property="Padding" Value="4,5,0,0" />
+            <Setter Property="ClipToBounds" Value="True" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsExpanded}" Value="False">
+                    <Setter Property="MaxHeight" Value="63" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Arrow that opens and closes a card -->
+        <Style x:Key="ExpandArrow" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bd" Width="26" Height="26" CornerRadius="8" Background="Transparent">
+                            <Path x:Name="Arrow" Data="M0,0 L5,5 L10,0" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.6"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="0" />
+                                </Path.RenderTransform>
+                            </Path>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                                <Setter TargetName="Arrow" Property="Stroke" Value="{StaticResource FgBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Arrow" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="180" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="FilterSeparator" TargetType="Border">
             <Setter Property="Width" Value="1" />
             <Setter Property="Height" Value="16" />
@@ -137,6 +182,7 @@
             <Border x:Name="CardBorder" Style="{StaticResource Card}" Padding="14,12,14,4" Margin="0,0,0,10">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ExpandArrow}" IsChecked="{Binding IsExpanded}" Margin="8,0,-6,0" />
                         <StackPanel x:Name="Count" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
                                     TextElement.Foreground="{StaticResource GoldLightBrush}">
                             <Border Width="46" Height="5" CornerRadius="3" Background="#14FFFFFF" Margin="0,0,7,0" VerticalAlignment="Center"
@@ -167,7 +213,7 @@
                             <TextBlock Text="{Binding PickedCount}" FontSize="12" FontWeight="Bold" Margin="7,0,0,0" />
                             <TextBlock Text="{Binding PickedValueText}" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="9,0,0,0" />
                         </StackPanel>
-                        <ItemsControl ItemsSource="{Binding Picked}" ItemTemplate="{StaticResource PickedTile}" ItemsPanel="{StaticResource WrapItems}" Margin="4,4,0,0" />
+                        <ItemsControl ItemsSource="{Binding Picked}" ItemTemplate="{StaticResource PickedTile}" Style="{StaticResource CardItems}" />
                     </StackPanel>
 
                     <!-- Missing -->
@@ -178,7 +224,7 @@
                             <TextBlock Text="{Binding MissingCount}" FontSize="12" FontWeight="Bold" Margin="7,0,0,0" />
                             <TextBlock Text="{Binding MissingValueText}" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="9,0,0,0" />
                         </StackPanel>
-                        <ItemsControl ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource MissingTile}" ItemsPanel="{StaticResource WrapItems}" Margin="4,4,0,0" />
+                        <ItemsControl ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource MissingTile}" Style="{StaticResource CardItems}" />
                     </StackPanel>
 
                     <!-- Kept -->
@@ -204,7 +250,7 @@
                                 <TextBlock Text="{l:T GroupKept}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource GreenBrush}" Margin="7,0,0,0" />
                                 <TextBlock Text="{Binding KeptCount}" FontSize="12" FontWeight="Bold" Margin="7,0,0,0" />
                             </StackPanel>
-                            <ItemsControl ItemsSource="{Binding Kept}" ItemTemplate="{StaticResource KeptTile}" ItemsPanel="{StaticResource WrapItems}" Margin="4,4,0,0" />
+                            <ItemsControl ItemsSource="{Binding Kept}" ItemTemplate="{StaticResource KeptTile}" Style="{StaticResource CardItems}" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

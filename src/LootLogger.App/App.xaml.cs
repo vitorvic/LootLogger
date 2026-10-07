@@ -27,6 +27,9 @@ public partial class App : Application
         // Always capturing while open, like other loggers; there is no start button.
         _viewModel.StartCapture();
 
+        // Install a newer LootLogger if one was released.
+        _ = UpdateAppAsync();
+
         // Pull the newest item list in the background; the built-in copy is used meanwhile.
         _ = Task.Run(async () =>
         {
@@ -43,6 +46,19 @@ public partial class App : Application
         });
     }
 
+    private async Task UpdateAppAsync()
+    {
+        try
+        {
+            await AppUpdater.CheckAndApplyAsync(() => { if (_viewModel is not null) _viewModel.Message = Loc.Instance["Updating"]; });
+        }
+        catch (Exception e)
+        {
+            // Offline or GitHub unreachable: keep running this version.
+            LogError(e);
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         _viewModel?.Dispose();
@@ -51,15 +67,19 @@ public partial class App : Application
 
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        LogError(e.Exception);
+        e.Handled = true;
+    }
+
+    private static void LogError(Exception exception)
+    {
         try
         {
             Directory.CreateDirectory(AppPaths.DataFolder);
-            File.AppendAllText(Path.Combine(AppPaths.DataFolder, "erros.log"), $"{DateTime.Now:O} {e.Exception}\n\n");
+            File.AppendAllText(Path.Combine(AppPaths.DataFolder, "erros.log"), $"{DateTime.Now:O} {exception}\n\n");
         }
         catch (IOException)
         {
         }
-
-        e.Handled = true;
     }
 }

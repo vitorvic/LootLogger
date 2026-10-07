@@ -1,0 +1,46 @@
+name: Release
+
+# Every push to main builds, tests and publishes a new version.
+# The installed app finds it on GitHub and updates itself.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      VERSION: 0.2.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test -c Release
+
+      - name: Publish
+        run: dotnet publish src/LootLogger.App -c Release -r win-x64 --self-contained -o publish -p:Version=${{ env.VERSION }}
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk --version 1.2.161
+
+      - name: Fetch the previous release (for small updates)
+        continue-on-error: true
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pack installer
+        run: vpk pack --packId LootLogger --packVersion ${{ env.VERSION }} --packDir publish --mainExe LootLogger.exe --packTitle LootLogger --packAuthors Vitor --icon src/LootLogger.App/Assets/icon.ico
+
+      - name: Upload release
+        run: vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "LootLogger ${{ env.VERSION }}" --tag v${{ env.VERSION }} --token ${{ secrets.GITHUB_TOKEN }}

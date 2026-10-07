@@ -13,6 +13,7 @@
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>0.1.0</Version>
+    <StartupObject>LootLogger.App.Program</StartupObject>
     <Product>LootLogger</Product>
     <Authors>Vitor</Authors>
     <Copyright>GPL-3.0</Copyright>
@@ -26,6 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
   <ItemGroup>

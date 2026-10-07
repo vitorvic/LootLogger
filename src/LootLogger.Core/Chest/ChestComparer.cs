@@ -106,6 +106,30 @@ public static class ChestLogParser
         fields.Add(current.ToString().Trim());
         return fields;
     }
+
+    /// <summary>
+    /// The lines of a new paste that were not pasted before, so the same chest tab pasted twice
+    /// does not count deposits twice. Identical lines inside one paste are real repeats and stay;
+    /// a tab copied again later only adds what is new.
+    /// </summary>
+    public static List<ChestLogEntry> NotYetPasted(IEnumerable<ChestLogEntry> existing, IReadOnlyList<ChestLogEntry> pasted)
+    {
+        var seen = existing.GroupBy(e => e).ToDictionary(g => g.Key, g => g.Count());
+        var result = new List<ChestLogEntry>();
+        foreach (var entry in pasted)
+        {
+            if (seen.TryGetValue(entry, out var count) && count > 0)
+            {
+                seen[entry] = count - 1;
+            }
+            else
+            {
+                result.Add(entry);
+            }
+        }
+
+        return result;
+    }
 }
 
 public static class ChestComparer

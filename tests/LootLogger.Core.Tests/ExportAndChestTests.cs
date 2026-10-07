@@ -107,6 +107,21 @@ public class ExportAndChestTests
     }
 
     [Fact]
+    public void ChestLog_SameTabPastedTwiceCountsOnce()
+    {
+        var t = new DateTime(2026, 10, 7, 22, 0, 0, DateTimeKind.Utc);
+        var potion = new ChestLogEntry(t, "Ana", "Major Gigantify Potion", 0, 0, 1);
+        var sword = new ChestLogEntry(t.AddSeconds(5), "Ana", "Broadsword", 0, 1, 1);
+        var firstPaste = new[] { potion, potion, sword };
+
+        Assert.Equal(3, ChestLogParser.NotYetPasted([], firstPaste).Count);
+        Assert.Empty(ChestLogParser.NotYetPasted(firstPaste, firstPaste));
+
+        var later = new ChestLogEntry(t.AddMinutes(3), "Bia", "Broadsword", 0, 1, 1);
+        Assert.Equal([later], ChestLogParser.NotYetPasted(firstPaste, [potion, potion, sword, later]));
+    }
+
+    [Fact]
     public void Compare_FindsWhatEachPlayerDidNotDeposit()
     {
         var loot = new[]

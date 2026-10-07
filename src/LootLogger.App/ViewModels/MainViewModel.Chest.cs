@@ -179,7 +179,11 @@ public sealed partial class MainViewModel
 
         if (chestText.Count > 0)
         {
-            AddChestText(string.Join('\n', chestText));
+            // One paste per file, so the same tab dropped twice is not counted twice.
+            foreach (var text in chestText)
+            {
+                AddChestText(text);
+            }
         }
         else if (lootFiles == 0)
         {
@@ -299,7 +303,11 @@ public sealed partial class MainViewModel
             return;
         }
 
-        AddChestText(string.Join('\n', dialog.FileNames.Select(File.ReadAllText)));
+        // Each file is its own paste, so the same tab saved twice is not counted twice.
+        foreach (var file in dialog.FileNames)
+        {
+            AddChestText(File.ReadAllText(file));
+        }
     }
 
     [RelayCommand]
@@ -319,8 +327,18 @@ public sealed partial class MainViewModel
             return;
         }
 
-        _chestEntries.AddRange(entries);
-        ChestMessage = L.Format("ChestLinesRead", _chestEntries.Count);
+        var added = ChestLogParser.NotYetPasted(_chestEntries, entries);
+        if (added.Count == 0)
+        {
+            ChestMessage = L["ChestAlreadyPasted"];
+            return;
+        }
+
+        _chestEntries.AddRange(added);
+        var repeated = entries.Count - added.Count;
+        ChestMessage = repeated > 0
+            ? L.Format("ChestLinesReadRepeats", _chestEntries.Count, repeated)
+            : L.Format("ChestLinesRead", _chestEntries.Count);
         RecomputeChest();
     }
 

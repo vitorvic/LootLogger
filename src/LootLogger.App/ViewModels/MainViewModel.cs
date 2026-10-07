@@ -50,6 +50,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         LootView.Filter = FilterLoot;
         CombatView = CollectionViewSource.GetDefaultView(KillRows);
         CombatView.Filter = FilterKill;
+        InitChest();
 
         _service.Tracker.PartyOnly = settings.PartyOnly;
         _service.Tracker.LootAdded += e => _dispatcher.BeginInvoke(() => OnLoot(e));
@@ -347,7 +348,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         ActiveSeconds = $":{active.Seconds:00}";
         (TotalValue, TotalValueUnit) = Format.Short(_session.TotalValue);
 
-        if (_chestDirty)
+        if (_chestDirty && Page == Page.Chest)
         {
             _chestDirty = false;
             RecomputeChest();

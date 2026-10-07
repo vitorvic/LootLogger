@@ -131,6 +131,7 @@ public class ExportAndChestTests
         var missing = Assert.Single(pandas.Missing);
         Assert.Equal("T7_POTION_REVIVE", missing.ItemId);
         Assert.Equal(3, missing.Quantity);
+        Assert.Equal(2, pandas.Kept.Sum(k => k.Quantity));
 
         var valniaa = result.Single(r => r.Player == "Valniaa");
         Assert.Empty(valniaa.Missing);

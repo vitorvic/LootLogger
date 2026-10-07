@@ -12,6 +12,7 @@
             <v:InverseBoolConverter x:Key="Not" />
             <v:FalseToVisibleConverter x:Key="FalseToVisible" />
             <v:TextToVisibleConverter x:Key="TextToVisible" />
+            <v:AllTrueToVisibleConverter x:Key="AllTrueToVisible" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

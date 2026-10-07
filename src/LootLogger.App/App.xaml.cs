@@ -19,10 +19,20 @@ public partial class App : Application
         var settings = AppSettings.Load();
         Loc.Instance.SetLanguage(settings.Language);
 
-        _viewModel = new MainViewModel(new CaptureService(), settings);
-        var window = new MainWindow { DataContext = _viewModel };
-
-        window.Show();
+        try
+        {
+            _viewModel = new MainViewModel(new CaptureService(), settings);
+            var window = new MainWindow { DataContext = _viewModel };
+            window.Show();
+        }
+        catch (Exception error)
+        {
+            // A broken version must still be able to update itself to a fixed one.
+            LogError(error);
+            _viewModel = null;
+            _ = RecoverAsync();
+            return;
+        }
 
         // Always capturing while open, like other loggers; there is no start button.
         _viewModel.StartCapture();
@@ -44,6 +54,13 @@ public partial class App : Application
             {
             }
         });
+    }
+
+    private async Task RecoverAsync()
+    {
+        await UpdateAppAsync();
+        MessageBox.Show(Loc.Instance["StartupError"], "LootLogger", MessageBoxButton.OK, MessageBoxImage.Error);
+        Shutdown();
     }
 
     private async Task UpdateAppAsync()

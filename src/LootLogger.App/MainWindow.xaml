@@ -14,22 +14,27 @@
         WindowStyle="None" ResizeMode="CanResize"
         UseLayoutRounding="True">
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="36" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+        <WindowChrome CaptionHeight="38" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
 
-    <Border x:Name="Frame" BorderBrush="#0A0F14" BorderThickness="1">
-        <Grid>
+    <Border x:Name="Frame" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+        <Grid ClipToBounds="True">
             <Grid.RowDefinitions>
-                <RowDefinition Height="36" />
+                <RowDefinition Height="38" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
+            <!-- Soft gold glow in the top right corner -->
+            <Ellipse Grid.RowSpan="3" Width="760" Height="560" Fill="{StaticResource GlowBrush}" IsHitTestVisible="False"
+                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-300,-220,0" />
+
             <!-- Title bar -->
-            <Border Grid.Row="0" Background="{StaticResource SideBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1">
+            <Border Grid.Row="0" Background="Transparent" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1">
                 <DockPanel LastChildFill="False">
                     <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                        <Image Source="pack://application:,,,/Assets/icon.png" Width="18" Height="18" />
-                        <TextBlock Text="LootLogger" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        <Image Source="pack://application:,,,/Assets/icon.png" Width="20" Height="20" />
+                        <TextBlock Text="LootLogger" FontWeight="SemiBold" FontSize="14" Margin="10,0,0,0" VerticalAlignment="Center" />
                         <Border Style="{StaticResource TitleSeparator}" />
 
                         <!-- Before the game sends the player -->
@@ -85,81 +90,36 @@
                 </DockPanel>
             </Border>
 
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="184" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <!-- Side menu -->
-                <Border Grid.Column="0" Background="{StaticResource SideBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,1,0" Padding="8,12">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Muted}" FontSize="11" Margin="10,8"
-                                   FontFamily="{StaticResource MonoFont}" Text="{Binding Version, StringFormat=v{0}}" />
-                        <StackPanel>
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Dashboard}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavDashboard}" />
-                                </StackPanel>
-                            </RadioButton>
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.LootLog}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavLootLog}" />
-                                </StackPanel>
-                            </RadioButton>
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Chest}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE8AB;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavChest}" />
-                                </StackPanel>
-                            </RadioButton>
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Combat}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE945;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavCombat}" />
-                                </StackPanel>
-                            </RadioButton>
-                            <Border Height="1" Background="{StaticResource LineBrush}" Margin="6,8" />
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Settings}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavSettings}" />
-                                </StackPanel>
-                            </RadioButton>
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.News}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE734;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavNews}" />
-                                </StackPanel>
-                            </RadioButton>
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Help}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE897;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavHelp}" />
-                                </StackPanel>
-                            </RadioButton>
-                            <RadioButton Style="{StaticResource NavButton}" GroupName="Nav"
-                                         IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.About}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" Width="26" VerticalAlignment="Center" />
-                                    <TextBlock Text="{l:T NavAbout}" />
-                                </StackPanel>
-                            </RadioButton>
-                        </StackPanel>
-                    </DockPanel>
+            <!-- Menu tabs -->
+            <DockPanel Grid.Row="1" Margin="16,12,16,0">
+                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center"
+                           FontFamily="{StaticResource MonoFont}" Text="{Binding Version, StringFormat=v{0}}" />
+                <Border HorizontalAlignment="Left" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="3">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavDashboard}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Dashboard}}" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavLootLog}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.LootLog}}" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavChest}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Chest}}" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavCombat}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Combat}}" />
+                        <Border Width="1" Height="16" Margin="6,0" Background="{StaticResource LineBrush}" VerticalAlignment="Center" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavSettings}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Settings}}" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavNews}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.News}}" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavHelp}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Help}}" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavAbout}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.About}}" />
+                    </StackPanel>
                 </Border>
+            </DockPanel>
 
-                <!-- Pages -->
-                <Grid Grid.Column="1" Margin="18,16,18,12">
+            <!-- Pages -->
+                <Grid Grid.Row="2" Margin="16,14,16,12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
@@ -183,7 +143,6 @@
                         </DockPanel>
                     </Border>
                 </Grid>
-            </Grid>
         </Grid>
     </Border>
 </Window>

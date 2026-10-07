@@ -1,151 +1,370 @@
 <UserControl x:Class="LootLogger.App.Views.ChestView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:l="clr-namespace:LootLogger.App.Localization">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <DockPanel Grid.Row="0">
-            <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavChest}" />
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource GoButton}" Content="{l:T PasteChestLog}" Command="{Binding PasteChestLogCommand}" Margin="0,0,8,0" />
-                <Button Content="{l:T OpenFile}" Command="{Binding OpenChestFileCommand}" Margin="0,0,8,0" />
-                <Button Content="{l:T ClearChest}" Command="{Binding ClearChestCommand}" />
-            </StackPanel>
-        </DockPanel>
-
-        <StackPanel Grid.Row="1" Margin="0,10,0,0">
-            <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Text="{l:T ChestHowTo}" />
-            <TextBlock Margin="0,4,0,0" Foreground="{StaticResource GoldBrush}" Text="{Binding ChestMessage}"
-                       Visibility="{Binding ChestMessage, Converter={StaticResource TextToVisible}}" />
-        </StackPanel>
-
-        <UniformGrid Grid.Row="2" Columns="4" Margin="0,14,0,0">
-            <Border Style="{StaticResource Tile}" Margin="0,0,5,0">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileSessionLoot}" />
-                    <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestLoot}" />
-                </StackPanel>
-            </Border>
-            <Border Style="{StaticResource Tile}" Margin="5,0">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileDeposited}" />
-                    <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource GreenBrush}" Text="{Binding ChestDeposited}" />
-                </StackPanel>
-            </Border>
-            <Border Style="{StaticResource Tile}" Margin="5,0">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileMissing}" />
-                    <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource RedBrush}" Text="{Binding ChestMissing}" />
-                </StackPanel>
-            </Border>
-            <Border Style="{StaticResource Tile}" Margin="5,0,0,0">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource Label}" Text="{l:T TileMissingValue}" />
-                    <TextBlock Style="{StaticResource TileValue}">
-                        <Run Text="{Binding ChestMissingValue, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding ChestMissingValueUnit, Mode=OneWay}" FontSize="14" FontWeight="Medium" Foreground="{StaticResource MutedBrush}" />
-                    </TextBlock>
-                </StackPanel>
-            </Border>
-        </UniformGrid>
-
-        <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,14,0,0">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource CardHeaderText}" Text="{l:T SortedByMissing}" />
-                        <TextBlock Style="{StaticResource CardHeaderText}" Text="{l:T ByPlayer}" />
-                    </DockPanel>
-                </Border>
-                <Border DockPanel.Dock="Top" Padding="10,6" BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,0,0,1">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.4*" />
-                            <ColumnDefinition Width="70" />
-                            <ColumnDefinition Width="80" />
-                            <ColumnDefinition Width="60" />
-                            <ColumnDefinition Width="2.6*" />
-                            <ColumnDefinition Width="90" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Style="{StaticResource ColumnHeader}" Text="{l:T ColPlayer}" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource ColumnHeader}" Text="{l:T ColLooted}" HorizontalAlignment="Right" />
-                        <TextBlock Grid.Column="2" Style="{StaticResource ColumnHeader}" Text="{l:T ColDeposited}" HorizontalAlignment="Right" />
-                        <TextBlock Grid.Column="3" Style="{StaticResource ColumnHeader}" Text="{l:T ColMissing}" HorizontalAlignment="Right" />
-                        <TextBlock Grid.Column="4" Style="{StaticResource ColumnHeader}" Text="{l:T ColMissingItems}" Margin="16,0,0,0" />
-                        <TextBlock Grid.Column="5" Style="{StaticResource ColumnHeader}" Text="{l:T ColStatus}" />
-                    </Grid>
-                </Border>
-                <ListBox Style="{StaticResource RowList}" ItemsSource="{Binding ChestRows}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
+             xmlns:l="clr-namespace:LootLogger.App.Localization"
+             AllowDrop="True" DragEnter="OnDragEnter" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
+    <UserControl.Resources>
+        <!-- One loot log in the left list, ticked to take part in the comparison -->
+        <Style x:Key="SourceRow" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="Bd" CornerRadius="9" Padding="10,8" BorderThickness="1" BorderBrush="Transparent" Background="Transparent">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="1.4*" />
-                                    <ColumnDefinition Width="70" />
-                                    <ColumnDefinition Width="80" />
-                                    <ColumnDefinition Width="60" />
-                                    <ColumnDefinition Width="2.6*" />
-                                    <ColumnDefinition Width="90" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" VerticalAlignment="Center">
-                                    <Run Text="{Binding Player, Mode=OneWay}" FontWeight="SemiBold" /> <Run Text="{Binding Guild, Mode=OneWay}" Foreground="{StaticResource MutedBrush}" />
-                                </TextBlock>
-                                <TextBlock Grid.Column="1" Text="{Binding Looted}" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="{Binding Deposited}" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="3" Text="{Binding Missing}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="{StaticResource RedBrush}" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsOk}" Value="True">
-                                                    <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <TextBlock Grid.Column="4" Text="{Binding MissingItems}" ToolTip="{Binding MissingItems}" TextTrimming="CharacterEllipsis"
-                                           Foreground="{StaticResource MutedBrush}" Margin="16,0,8,0" VerticalAlignment="Center" />
-                                <Border Grid.Column="5" HorizontalAlignment="Left">
-                                    <Border.Style>
-                                        <Style TargetType="Border" BasedOn="{StaticResource Chip}">
-                                            <Setter Property="BorderBrush" Value="{StaticResource RedDimBrush}" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsOk}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{StaticResource GreenDimBrush}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsPartial}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{StaticResource GoldDimBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBlock Text="{Binding Status}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource ChipText}">
-                                                <Setter Property="Foreground" Value="{StaticResource RedBrush}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsOk}" Value="True">
-                                                        <Setter Property="Foreground" Value="{StaticResource GreenBrush}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsPartial}" Value="True">
-                                                        <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                <Border x:Name="Box" Width="15" Height="15" CornerRadius="4" BorderThickness="1" BorderBrush="{StaticResource MutedBrush}" VerticalAlignment="Center">
+                                    <Path x:Name="Tick" Data="M2.5,7 L5.5,10 L11,3.5" Stroke="{StaticResource OnGoldTextBrush}" StrokeThickness="1.8" Visibility="Collapsed" />
                                 </Border>
+                                <StackPanel Grid.Column="1" Margin="9,0,6,0">
+                                    <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}" />
+                                    <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <Ellipse Grid.Column="2" Width="7" Height="7" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center"
+                                         Visibility="{Binding IsLive, Converter={StaticResource BoolToVisibility}}" />
                             </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldGlassBrush}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldGlassBrush}" />
+                                <Setter TargetName="Box" Property="Background" Value="{StaticResource GoldBrush}" />
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource GoldBrush}" />
+                                <Setter TargetName="Tick" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Item picture with tier (top left) and amount (bottom right) -->
+        <Style x:Key="TileFrame" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Background" Value="#08FFFFFF" />
+            <Setter Property="BorderThickness" Value="1.5" />
+        </Style>
+        <Style x:Key="TileTier" TargetType="Border">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="-4,-5,0,0" />
+            <Setter Property="Padding" Value="3,0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Background" Value="{StaticResource BgBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource GoldDimBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style x:Key="TileQuantity" TargetType="Border">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Margin" Value="0,0,-4,-5" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="CornerRadius" Value="5" />
+        </Style>
+
+        <DataTemplate x:Key="MissingTile">
+            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}">
+                <Border Style="{StaticResource TileFrame}" BorderBrush="{StaticResource RedBrush}">
+                    <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
+                </Border>
+                <Border Style="{StaticResource TileTier}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource GoldLightBrush}" />
+                </Border>
+                <Border Style="{StaticResource TileQuantity}" Background="{StaticResource RedBrush}" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource OnGoldTextBrush}" />
+                </Border>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="KeptTile">
+            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}">
+                <Border Style="{StaticResource TileFrame}" BorderBrush="{StaticResource GreenDimBrush}">
+                    <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
+                </Border>
+                <Border Style="{StaticResource TileTier}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource GoldLightBrush}" />
+                </Border>
+                <Border Style="{StaticResource TileQuantity}" Background="{StaticResource GreenBrush}" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource OnGreenTextBrush}" />
+                </Border>
+            </Grid>
+        </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="WrapItems">
+            <WrapPanel />
+        </ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="RowItems">
+            <StackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+
+        <Style x:Key="FilterSeparator" TargetType="Border">
+            <Setter Property="Width" Value="1" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Margin" Value="4,0,10,6" />
+            <Setter Property="Background" Value="{StaticResource LineBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- One player: what is missing and what is already in the chest -->
+        <DataTemplate x:Key="PlayerCard">
+            <Border x:Name="CardBorder" Style="{StaticResource Card}" Padding="14,12,14,4" Margin="0,0,0,10">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <StackPanel x:Name="Count" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                                    TextElement.Foreground="{StaticResource GoldLightBrush}">
+                            <Border Width="46" Height="5" CornerRadius="3" Background="#14FFFFFF" Margin="0,0,7,0" VerticalAlignment="Center">
+                                <Border x:Name="CountBar" CornerRadius="3" Background="{StaticResource GoldBrush}" RenderTransformOrigin="0,0.5">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform ScaleX="{Binding KeptFraction}" />
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
+                            <TextBlock Text="{Binding CountText}" FontFamily="{StaticResource MonoFont}" FontSize="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Border Width="26" Height="26" CornerRadius="8" Background="#0FFFFFFF">
+                            <TextBlock Text="{Binding Initial}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource GoldLightBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="{Binding Player}" FontSize="13.5" FontWeight="SemiBold" Margin="9,0,9,0" VerticalAlignment="Center" />
+                        <Border Background="{StaticResource GoldGlassBrush}" CornerRadius="5" Padding="7,1" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                Visibility="{Binding HasGuild, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding Guild}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource GoldLightBrush}" />
+                        </Border>
+                    </DockPanel>
+
+                    <!-- Missing -->
+                    <StackPanel Visibility="{Binding HasMissing, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Ellipse Width="8" Height="8" Fill="{StaticResource RedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T GroupMissing}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource RedBrush}" Margin="7,0,0,0" />
+                            <TextBlock Text="{Binding MissingCount}" FontSize="12" FontWeight="Bold" Margin="7,0,0,0" />
+                            <TextBlock Text="{Binding MissingValueText}" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="9,0,0,0" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource MissingTile}" ItemsPanel="{StaticResource WrapItems}" Margin="4,4,0,0" />
+                    </StackPanel>
+
+                    <!-- Kept -->
+                    <Border Visibility="{Binding HasKept, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+                                <Setter Property="BorderThickness" Value="0,1,0,0" />
+                                <Setter Property="Margin" Value="0,2,0,0" />
+                                <Setter Property="Padding" Value="0,12,0,0" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMissing}" Value="False">
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="Margin" Value="0" />
+                                        <Setter Property="Padding" Value="0" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{l:T GroupKept}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource GreenBrush}" Margin="7,0,0,0" />
+                                <TextBlock Text="{Binding KeptCount}" FontSize="12" FontWeight="Bold" Margin="7,0,0,0" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding Kept}" ItemTemplate="{StaticResource KeptTile}" ItemsPanel="{StaticResource WrapItems}" Margin="4,4,0,0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsOk}" Value="True">
+                    <Setter TargetName="Count" Property="TextElement.Foreground" Value="{StaticResource GreenBrush}" />
+                    <Setter TargetName="CountBar" Property="Background" Value="{StaticResource GreenBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsNone}" Value="True">
+                    <Setter TargetName="Count" Property="TextElement.Foreground" Value="{StaticResource RedBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="236" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Loot logs -->
+        <Border Grid.Column="0" Style="{StaticResource Card}" Padding="12">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Style="{StaticResource Label}" Text="{l:T LootFiles}" Margin="2,2,0,10" />
+
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Grid Margin="0,8,0,0">
+                        <Rectangle x:Name="DropOutline" RadiusX="10" RadiusY="10" Stroke="#2EFFFFFF" StrokeThickness="1" StrokeDashArray="4 3" />
+                        <Button Command="{Binding PickLootFilesCommand}" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="14">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="{l:T PickFile}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                            <TextBlock Text="{l:T OrDragHere}" FontSize="11" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                    <StackPanel Margin="2,8,0,0" Visibility="{Binding ChestMergedText, Converter={StaticResource TextToVisible}}">
+                        <TextBlock Text="{Binding ChestMergedText}" FontSize="12" Foreground="{StaticResource GoldLightBrush}" />
+                        <TextBlock Text="{l:T DuplicatesOnce}" FontSize="11" Foreground="{StaticResource MutedBrush}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding LootSources}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Style="{StaticResource SourceRow}" IsChecked="{Binding IsChecked}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </DockPanel>
         </Border>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Chest log -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <Button Style="{StaticResource GoButton}" Content="{l:T PasteChestLog}" Command="{Binding PasteChestLogCommand}" Margin="0,0,8,0" />
+                <Button Content="{l:T PickChestLog}" Command="{Binding OpenChestFileCommand}" Margin="0,0,8,0" />
+                <Button Content="{l:T ClearChest}" Command="{Binding ClearChestCommand}" Margin="0,0,8,0"
+                        Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}" />
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,0,0"
+                            Visibility="{Binding ChestMessage, Converter={StaticResource TextToVisible}}">
+                    <Ellipse Width="6" Height="6" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding ChestMessage}" FontSize="12" Foreground="{StaticResource GreenBrush}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Totals -->
+            <UniformGrid Grid.Row="1" Columns="4" Margin="0,12,0,0">
+                <Border Style="{StaticResource Tile}" Margin="0,0,5,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileLooted}" />
+                        <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestLooted}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileKept}" />
+                        <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource GreenBrush}" Text="{Binding ChestKept}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="5,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileMissing}" />
+                        <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource RedBrush}" Text="{Binding ChestMissing}" />
+                        <TextBlock Text="{Binding ChestMissingValue}" FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                   Visibility="{Binding ChestMissingValue, Converter={StaticResource TextToVisible}}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Tile}" Margin="5,0,0,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileRate}" />
+                        <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestRate}" />
+                        <Border Height="5" CornerRadius="3" Background="#14FFFFFF" Margin="0,4,0,0">
+                            <Border CornerRadius="3" Background="{StaticResource GoldBrush}" RenderTransformOrigin="0,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="{Binding ChestRateFraction}" />
+                                </Border.RenderTransform>
+                            </Border>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Filters -->
+            <WrapPanel Grid.Row="2" Margin="0,12,0,4" Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}">
+                <Grid Width="170" Margin="0,0,6,6">
+                    <TextBox x:Name="PlayerSearch" Text="{Binding ChestPlayerSearch, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="{l:T SearchPlayer}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Visibility="{Binding Text, ElementName=PlayerSearch, Converter={StaticResource FalseToVisible}}" />
+                </Grid>
+                <ComboBox ItemsSource="{Binding ChestGuilds}" SelectedIndex="{Binding ChestGuildIndex}" MinWidth="150" Margin="0,0,6,6" />
+                <CheckBox Style="{StaticResource ToggleChip}" Content="{l:T OnlyDebtors}" IsChecked="{Binding OnlyDebtors}" />
+                <Border Style="{StaticResource FilterSeparator}" />
+                <ItemsControl ItemsSource="{Binding ChestTiers}" ItemsPanel="{StaticResource RowItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border Style="{StaticResource FilterSeparator}" />
+                <ItemsControl ItemsSource="{Binding ChestKinds}" ItemsPanel="{StaticResource RowItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </WrapPanel>
+
+            <!-- Before a chest log is pasted -->
+            <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="24"
+                    Visibility="{Binding HasChestLog, Converter={StaticResource FalseToVisible}}">
+                <TextBlock Text="{l:T ChestEmpty}" Style="{StaticResource Muted}" FontSize="13" TextAlignment="Center"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420" />
+            </Border>
+
+            <!-- Nobody left after filtering -->
+            <TextBlock Grid.Row="3" Text="{l:T ChestNoCards}" Style="{StaticResource Muted}" FontSize="13" HorizontalAlignment="Center" Margin="0,40,0,0">
+                <TextBlock.Visibility>
+                    <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                        <Binding Path="HasChestLog" />
+                        <Binding Path="HasChestCards" Converter="{StaticResource Not}" />
+                    </MultiBinding>
+                </TextBlock.Visibility>
+            </TextBlock>
+
+            <!-- Player cards -->
+            <ItemsControl Grid.Row="3" Margin="0,8,0,0" ItemsSource="{Binding ChestCards}" ItemTemplate="{StaticResource PlayerCard}"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" ScrollViewer.CanContentScroll="True">
+                <ItemsControl.Template>
+                    <ControlTemplate TargetType="ItemsControl">
+                        <ScrollViewer CanContentScroll="True" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,6,0">
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ItemsControl.Template>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </Grid>
     </Grid>
 </UserControl>

@@ -148,28 +148,6 @@ public sealed class KillRow(KillEntry entry) : ObservableObject
     public string LostValueText => LostValue > 0 ? Format.Silver(LostValue) : string.Empty;
 }
 
-public sealed class ChestRow(PlayerComparison comparison, ItemDatabase items)
-{
-    public string Player => comparison.Player;
-    public string Guild => comparison.Guild;
-    public int Looted => comparison.Looted;
-    public int Deposited => comparison.Deposited;
-    public int Missing => comparison.MissingCount;
-    public bool IsOk => comparison.MissingCount == 0;
-    public bool IsPartial => comparison.MissingCount > 0 && comparison.Deposited > 0;
-    public bool IsPending => comparison.MissingCount > 0 && comparison.Deposited == 0;
-
-    public string Status => IsOk ? Loc.Instance["StatusOk"] : IsPartial ? Loc.Instance["StatusPartial"] : Loc.Instance["StatusPending"];
-
-    public string MissingItems => comparison.Missing.Count == 0
-        ? "—"
-        : string.Join(", ", comparison.Missing.Select(m =>
-        {
-            var name = items.GetByUniqueName(m.ItemId)?.NameFor(Loc.Instance.Language) ?? m.ItemName;
-            return m.Quantity > 1 ? $"{m.Quantity}× {name}" : name;
-        }));
-}
-
 public static class Format
 {
     /// <summary>Full number with thousands separators in the chosen language: 840.692 or 840,692.</summary>

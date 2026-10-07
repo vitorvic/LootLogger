@@ -26,7 +26,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Rank}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
                 <TextBlock x:Name="Name" Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" VerticalAlignment="Center" />
-                <Border Grid.Column="2" Height="6" CornerRadius="3" Background="#0F161D" VerticalAlignment="Center">
+                <Border Grid.Column="2" Height="6" CornerRadius="3" Background="#14FFFFFF" VerticalAlignment="Center">
                     <Border x:Name="Bar" CornerRadius="3" Background="{StaticResource BlueBrush}" RenderTransformOrigin="0,0.5">
                         <Border.RenderTransform>
                             <ScaleTransform ScaleX="{Binding BarFraction}" />

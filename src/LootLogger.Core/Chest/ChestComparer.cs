@@ -8,14 +8,19 @@ namespace LootLogger.Core.Chest;
 /// <summary>One line of the guild chest log the game lets you copy.</summary>
 public sealed record ChestLogEntry(DateTime UtcTime, string Player, string ItemName, int Enchantment, int Quality, int Amount);
 
-public sealed record MissingItem(string ItemId, string ItemName, int Quantity, long UnitValue);
+/// <summary>Some amount of one item, with its estimated price each.</summary>
+public sealed record ItemAmount(string ItemId, string ItemName, int Quantity, long UnitValue)
+{
+    public long TotalValue => Quantity * UnitValue;
+}
 
 public sealed record PlayerComparison(
     string Player,
     string Guild,
     int Looted,
     int Deposited,
-    IReadOnlyList<MissingItem> Missing)
+    IReadOnlyList<ItemAmount> Missing,
+    IReadOnlyList<ItemAmount> Kept)
 {
     public int MissingCount => Missing.Sum(m => m.Quantity);
     public long MissingValue => Missing.Sum(m => m.Quantity * m.UnitValue);
@@ -121,7 +126,8 @@ public static class ChestComparer
         {
             var remaining = deposits.TryGetValue(player.Key, out var d) ? new Dictionary<string, int>(d, StringComparer.OrdinalIgnoreCase) : [];
             var deposited = 0;
-            var missing = new List<MissingItem>();
+            var missing = new List<ItemAmount>();
+            var kept = new List<ItemAmount>();
 
             foreach (var item in player.GroupBy(l => l.ItemId))
             {
@@ -130,10 +136,15 @@ public static class ChestComparer
                 var matched = Math.Min(looted, available);
                 remaining[item.Key] = available - matched;
                 deposited += matched;
+                var first = item.OrderByDescending(l => l.UnitValue).First();
+                if (matched > 0)
+                {
+                    kept.Add(new ItemAmount(item.Key, first.ItemNameEnglish, matched, first.UnitValue));
+                }
+
                 if (looted > matched)
                 {
-                    var first = item.First();
-                    missing.Add(new MissingItem(item.Key, first.ItemNameEnglish, looted - matched, first.UnitValue));
+                    missing.Add(new ItemAmount(item.Key, first.ItemNameEnglish, looted - matched, first.UnitValue));
                 }
             }
 
@@ -142,7 +153,8 @@ public static class ChestComparer
                 player.Select(l => l.LootedByGuild).FirstOrDefault(g => g.Length > 0) ?? string.Empty,
                 player.Sum(l => l.Quantity),
                 deposited,
-                missing.OrderByDescending(m => m.Quantity * m.UnitValue).ToList()));
+                missing.OrderByDescending(m => m.TotalValue).ToList(),
+                kept.OrderByDescending(m => m.TotalValue).ToList()));
         }
 
         return result.OrderByDescending(r => r.MissingValue).ThenByDescending(r => r.MissingCount).ToList();

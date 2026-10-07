@@ -129,8 +129,12 @@ internal static class Strings
         ["KindOther"] = "Outros",
         ["GroupMissing"] = "Faltando",
         ["GroupKept"] = "Guardou no baú",
+        ["GroupPicked"] = "Pegou",
+        ["ItemsCount"] = "{0} itens",
+        ["ChestHint"] = "Cole o log do baú para ver quem guardou. Por enquanto mostra só o que cada um pegou.",
         ["ChestEmpty"] = "Cole o log do baú para ver quem guardou o loot. No jogo: baú da guild › Log › Copiar.",
         ["ChestNoCards"] = "Ninguém aparece com esses filtros.",
+        ["ChestNoLoot"] = "Nenhum loot ainda. Escolha um arquivo à esquerda ou arraste para cá.",
 
         // Combat
         ["OnlyMyGuild"] = "Só minha guild",
@@ -307,8 +311,12 @@ internal static class Strings
         ["KindOther"] = "Other",
         ["GroupMissing"] = "Missing",
         ["GroupKept"] = "Deposited",
+        ["GroupPicked"] = "Looted",
+        ["ItemsCount"] = "{0} items",
+        ["ChestHint"] = "Paste the chest log to see who deposited. For now it only shows what each player looted.",
         ["ChestEmpty"] = "Paste the chest log to see who deposited the loot. In game: guild chest › Log › Copy.",
         ["ChestNoCards"] = "Nobody matches these filters.",
+        ["ChestNoLoot"] = "No loot yet. Pick a file on the left or drag one here.",
 
         ["OnlyMyGuild"] = "Only my guild",
         ["TileKills"] = "KILLS",

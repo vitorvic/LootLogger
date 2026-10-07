@@ -84,8 +84,11 @@ public sealed class ItemTile : ObservableObject
     private async Task LoadIconAsync() => Icon = await ItemIcons.GetAsync(Item.ItemId);
 }
 
-/// <summary>One player in Comparar Baú: what they still owe and what they already put in the chest.</summary>
-public sealed class ChestCard(string player, string guild, IReadOnlyList<ItemTile> missing, IReadOnlyList<ItemTile> kept)
+/// <summary>
+/// One player in Comparar Baú: what they still owe and what they already put in the chest.
+/// Before a chest log is pasted it only lists what they picked up.
+/// </summary>
+public sealed class ChestCard(string player, string guild, IReadOnlyList<ItemTile> missing, IReadOnlyList<ItemTile> kept, IReadOnlyList<ItemTile> picked)
 {
     public string Player => player;
     public string Guild => guild;
@@ -94,22 +97,30 @@ public sealed class ChestCard(string player, string guild, IReadOnlyList<ItemTil
 
     public IReadOnlyList<ItemTile> Missing => missing;
     public IReadOnlyList<ItemTile> Kept => kept;
+    public IReadOnlyList<ItemTile> Picked => picked;
 
     public int MissingCount => missing.Sum(t => t.Quantity);
     public int KeptCount => kept.Sum(t => t.Quantity);
-    public int Looted => MissingCount + KeptCount;
+    public int PickedCount => picked.Sum(t => t.Quantity);
+    public int Looted => MissingCount + KeptCount + PickedCount;
     public long MissingValue => missing.Sum(t => t.Item.TotalValue);
+    public long PickedValue => picked.Sum(t => t.Item.TotalValue);
 
     public bool HasMissing => missing.Count > 0;
     public bool HasKept => kept.Count > 0;
+    public bool HasPicked => picked.Count > 0;
 
-    public bool IsOk => MissingCount == 0;
+    /// <summary>Compared with a chest log (otherwise only the pickups are known).</summary>
+    public bool IsCompared => !HasPicked;
+
+    public bool IsOk => IsCompared && MissingCount == 0;
     public bool IsNone => KeptCount == 0 && MissingCount > 0;
     public bool IsPartial => KeptCount > 0 && MissingCount > 0;
 
-    /// <summary>"3/5": items in the chest out of items picked up.</summary>
-    public string CountText => $"{KeptCount}/{Looted}";
+    /// <summary>"3/5": items in the chest out of items picked up; "7 itens" before comparing.</summary>
+    public string CountText => IsCompared ? $"{KeptCount}/{Looted}" : Loc.Instance.Format("ItemsCount", PickedCount);
     public double KeptFraction => Looted == 0 ? 0 : (double) KeptCount / Looted;
 
     public string MissingValueText => MissingValue > 0 ? "≈ " + Format.Compact(MissingValue) : string.Empty;
+    public string PickedValueText => PickedValue > 0 ? "≈ " + Format.Compact(PickedValue) : string.Empty;
 }

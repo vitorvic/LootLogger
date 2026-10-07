@@ -68,6 +68,8 @@ public sealed partial class MainViewModel
 
     public bool HasChestCards => ChestCards.Count > 0;
 
+    public string ChestEmptyText => HasChestLog ? L["ChestNoCards"] : L["ChestNoLoot"];
+
     private void InitChest()
     {
         foreach (var tier in new[] { 4, 5, 6, 7, 8 })
@@ -319,7 +321,8 @@ public sealed partial class MainViewModel
         var loot = logs.Count == 1 ? logs[0] : LootFile.Merge(logs);
         ChestMergedText = logs.Count > 1 ? L.Format("LogsMerged", logs.Count) : string.Empty;
 
-        _chestResult = HasChestLog ? ChestComparer.Compare(loot, _chestEntries, _service.Items) : [];
+        // Without a chest log everything counts as missing, which the cards show as "Pegou".
+        _chestResult = ChestComparer.Compare(loot, _chestEntries, _service.Items);
         OnPropertyChanged(nameof(HasChestLog));
 
         var guilds = _chestResult.Select(r => r.Guild).Where(g => g.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase)
@@ -342,13 +345,11 @@ public sealed partial class MainViewModel
             kind.Label = L["Kind" + kind.Value];
         }
 
-        ApplyChestFilter(loot);
+        ApplyChestFilter();
     }
 
-    private void ApplyChestFilter() => ApplyChestFilter(null);
-
     /// <summary>Builds the player cards and tiles from the last comparison and the filters.</summary>
-    private void ApplyChestFilter(IReadOnlyList<LootEntry>? loot)
+    private void ApplyChestFilter()
     {
         bool Shown(ItemAmount item)
         {
@@ -369,12 +370,12 @@ public sealed partial class MainViewModel
                 continue;
             }
 
-            var card = new ChestCard(
-                player.Player,
-                player.Guild,
-                player.Missing.Where(Shown).Select(m => new ItemTile(m, _service.Items)).ToList(),
-                player.Kept.Where(Shown).Select(m => new ItemTile(m, _service.Items)).ToList());
-            if (card.Looted == 0 || (OnlyDebtors && card.IsOk))
+            var missing = player.Missing.Where(Shown).Select(m => new ItemTile(m, _service.Items)).ToList();
+            var deposited = player.Kept.Where(Shown).Select(m => new ItemTile(m, _service.Items)).ToList();
+            var card = HasChestLog
+                ? new ChestCard(player.Player, player.Guild, missing, deposited, [])
+                : new ChestCard(player.Player, player.Guild, [], [], missing);
+            if (card.Looted == 0 || (HasChestLog && OnlyDebtors && card.IsOk))
             {
                 continue;
             }
@@ -389,11 +390,11 @@ public sealed partial class MainViewModel
         }
 
         OnPropertyChanged(nameof(HasChestCards));
+        OnPropertyChanged(nameof(ChestEmptyText));
 
         if (!HasChestLog)
         {
-            var source = loot ?? LootSources.Where(s => s.IsChecked).SelectMany(s => s.IsLive ? _session.Loot : s.Loot).ToList();
-            ChestLooted = Format.Silver(source.Sum(l => l.Quantity));
+            ChestLooted = Format.Silver(cards.Sum(c => c.Looted));
             ChestKept = "—";
             ChestMissing = "—";
             ChestMissingValue = string.Empty;

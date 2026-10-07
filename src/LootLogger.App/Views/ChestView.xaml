@@ -103,6 +103,20 @@
             </Grid>
         </DataTemplate>
 
+        <DataTemplate x:Key="PickedTile">
+            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}">
+                <Border Style="{StaticResource TileFrame}" BorderBrush="{StaticResource LineBrush}">
+                    <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
+                </Border>
+                <Border Style="{StaticResource TileTier}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource GoldLightBrush}" />
+                </Border>
+                <Border Style="{StaticResource TileQuantity}" Background="#33FFFFFF" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource FgBrush}" />
+                </Border>
+            </Grid>
+        </DataTemplate>
+
         <ItemsPanelTemplate x:Key="WrapItems">
             <WrapPanel />
         </ItemsPanelTemplate>
@@ -125,7 +139,8 @@
                     <DockPanel Margin="0,0,0,12">
                         <StackPanel x:Name="Count" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
                                     TextElement.Foreground="{StaticResource GoldLightBrush}">
-                            <Border Width="46" Height="5" CornerRadius="3" Background="#14FFFFFF" Margin="0,0,7,0" VerticalAlignment="Center">
+                            <Border Width="46" Height="5" CornerRadius="3" Background="#14FFFFFF" Margin="0,0,7,0" VerticalAlignment="Center"
+                                    Visibility="{Binding IsCompared, Converter={StaticResource BoolToVisibility}}">
                                 <Border x:Name="CountBar" CornerRadius="3" Background="{StaticResource GoldBrush}" RenderTransformOrigin="0,0.5">
                                     <Border.RenderTransform>
                                         <ScaleTransform ScaleX="{Binding KeptFraction}" />
@@ -144,6 +159,16 @@
                             <TextBlock Text="{Binding Guild}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource GoldLightBrush}" />
                         </Border>
                     </DockPanel>
+
+                    <!-- Before a chest log: everything picked up -->
+                    <StackPanel Visibility="{Binding HasPicked, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="{l:T GroupPicked}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock Text="{Binding PickedCount}" FontSize="12" FontWeight="Bold" Margin="7,0,0,0" />
+                            <TextBlock Text="{Binding PickedValueText}" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="9,0,0,0" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Picked}" ItemTemplate="{StaticResource PickedTile}" ItemsPanel="{StaticResource WrapItems}" Margin="4,4,0,0" />
+                    </StackPanel>
 
                     <!-- Missing -->
                     <StackPanel Visibility="{Binding HasMissing, Converter={StaticResource BoolToVisibility}}">
@@ -306,14 +331,20 @@
             </UniformGrid>
 
             <!-- Filters -->
-            <WrapPanel Grid.Row="2" Margin="0,12,0,4" Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel Grid.Row="2" Margin="0,12,0,4">
+            <Border CornerRadius="10" Padding="12,9" Margin="0,0,0,10" Background="{StaticResource GoldGlassBrush}"
+                    Visibility="{Binding HasChestLog, Converter={StaticResource FalseToVisible}}">
+                <TextBlock Text="{l:T ChestHint}" FontSize="12.5" Foreground="{StaticResource GoldLightBrush}" TextWrapping="Wrap" />
+            </Border>
+            <WrapPanel>
                 <Grid Width="170" Margin="0,0,6,6">
                     <TextBox x:Name="PlayerSearch" Text="{Binding ChestPlayerSearch, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Text="{l:T SearchPlayer}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                Visibility="{Binding Text, ElementName=PlayerSearch, Converter={StaticResource FalseToVisible}}" />
                 </Grid>
                 <ComboBox ItemsSource="{Binding ChestGuilds}" SelectedIndex="{Binding ChestGuildIndex}" MinWidth="150" Margin="0,0,6,6" />
-                <CheckBox Style="{StaticResource ToggleChip}" Content="{l:T OnlyDebtors}" IsChecked="{Binding OnlyDebtors}" />
+                <CheckBox Style="{StaticResource ToggleChip}" Content="{l:T OnlyDebtors}" IsChecked="{Binding OnlyDebtors}"
+                          Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}" />
                 <Border Style="{StaticResource FilterSeparator}" />
                 <ItemsControl ItemsSource="{Binding ChestTiers}" ItemsPanel="{StaticResource RowItems}">
                     <ItemsControl.ItemTemplate>
@@ -331,23 +362,11 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </WrapPanel>
+            </StackPanel>
 
-            <!-- Before a chest log is pasted -->
-            <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="24"
-                    Visibility="{Binding HasChestLog, Converter={StaticResource FalseToVisible}}">
-                <TextBlock Text="{l:T ChestEmpty}" Style="{StaticResource Muted}" FontSize="13" TextAlignment="Center"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420" />
-            </Border>
-
-            <!-- Nobody left after filtering -->
-            <TextBlock Grid.Row="3" Text="{l:T ChestNoCards}" Style="{StaticResource Muted}" FontSize="13" HorizontalAlignment="Center" Margin="0,40,0,0">
-                <TextBlock.Visibility>
-                    <MultiBinding Converter="{StaticResource AllTrueToVisible}">
-                        <Binding Path="HasChestLog" />
-                        <Binding Path="HasChestCards" Converter="{StaticResource Not}" />
-                    </MultiBinding>
-                </TextBlock.Visibility>
-            </TextBlock>
+            <!-- Nothing to show -->
+            <TextBlock Grid.Row="3" Style="{StaticResource Muted}" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,40,0,0"
+                       Text="{Binding ChestEmptyText}" Visibility="{Binding HasChestCards, Converter={StaticResource FalseToVisible}}" />
 
             <!-- Player cards -->
             <ItemsControl Grid.Row="3" Margin="0,8,0,0" ItemsSource="{Binding ChestCards}" ItemTemplate="{StaticResource PlayerCard}"

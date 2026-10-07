@@ -65,6 +65,36 @@ public class LootFileTests
     }
 
     [Fact]
+    public void Compare_ADeathInALaterFightDoesNotCoverEarlierLoot()
+    {
+        var items = LootLogger.Core.Data.ItemDatabase.LoadBuiltIn();
+        // A week compared at once: Ana kept Monday's bag, then died in Wednesday's fight while carrying a cape.
+        var monday = Loot("Ana", "T6_BAG", 1, 0);
+        var wednesday = Loot("Ana", "T5_CAPE", 1, 0) with { UtcTime = monday.UtcTime.AddDays(2) };
+        var death = new KillEntry(wednesday.UtcTime.AddMinutes(10), "Ana", "PlVAS", "", "faca02", "Outlimits", "", "Sunfang Cliffs");
+
+        var ana = Assert.Single(LootLogger.Core.Chest.ChestComparer.Compare([monday, wednesday], [], items, [death]));
+
+        Assert.Equal("T6_BAG", Assert.Single(ana.Missing).ItemId);
+        Assert.Equal("T5_CAPE", Assert.Single(ana.LostOnDeath).ItemId);
+        Assert.Equal(death, ana.Death);
+    }
+
+    [Fact]
+    public void Compare_ADeathAfterAPauseInTheSameFightStillCoversTheLoot()
+    {
+        var items = LootLogger.Core.Data.ItemDatabase.LoadBuiltIn();
+        // Ana picked a bag, the fight paused (Bia looted 40 minutes later), and Ana died 35 minutes after that.
+        var loot = new[] { Loot("Ana", "T6_BAG", 1, 0), Loot("Bia", "T5_CAPE", 1, 40 * 60) };
+        var death = new KillEntry(loot[0].UtcTime.AddMinutes(75), "Ana", "PlVAS", "", "faca02", "Outlimits", "", "Sunfang Cliffs");
+
+        var ana = LootLogger.Core.Chest.ChestComparer.Compare(loot, [], items, [death]).Single(p => p.Player == "Ana");
+
+        Assert.Equal("T6_BAG", Assert.Single(ana.LostOnDeath).ItemId);
+        Assert.Empty(ana.Missing);
+    }
+
+    [Fact]
     public void Parse_ReturnsNothingForOtherText()
     {
         Assert.Empty(LootFile.Parse("Date,Player,Item,Enchantment,Quality,Amount\n\"10/06/2026 21:58:00\",\"NillBlack\",\"Elmo\",\"2\",\"1\",\"1\""));

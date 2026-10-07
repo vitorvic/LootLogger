@@ -183,15 +183,22 @@ public static class ChestComparer
     /// For each player who looted, counts what they picked up against what they deposited.
     /// Deposits are matched to loot by item id and only count when made after the item was picked up;
     /// withdrawals (negative amounts) are ignored, since only officers can take items out.
-    /// Items not deposited that were picked up before the player died are counted as lost on death, not missing.
+    /// Items not deposited that were picked up before the player died in the same fight are counted as lost on death, not missing.
     /// </summary>
     public static List<PlayerComparison> Compare(
         IEnumerable<LootEntry> loot, IEnumerable<ChestLogEntry> chest, ItemDatabase items, IEnumerable<KillEntry>? kills = null)
     {
         var lootList = loot as IReadOnlyCollection<LootEntry> ?? loot.ToList();
-        var lastDeath = (kills ?? []).Concat(DeathsFromBodies(lootList))
+        var deaths = (kills ?? []).Concat(DeathsFromBodies(lootList)).ToList();
+
+        // Several fights can be compared at once (a whole week, say): a death only covers what was picked up in its own fight.
+        var fightStarts = FightStarts(lootList.Select(l => l.UtcTime).Concat(deaths.Select(k => k.UtcTime)));
+        var lastDeath = deaths
             .GroupBy(k => k.Died, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => LatestDeath(g), StringComparer.OrdinalIgnoreCase);
+            .ToDictionary(
+                g => g.Key,
+                g => g.GroupBy(k => FightOf(fightStarts, k.UtcTime)).ToDictionary(f => f.Key, f => LatestDeath(f)),
+                StringComparer.OrdinalIgnoreCase);
 
         var deposits = new Dictionary<string, Dictionary<string, List<ChestLogEntry>>>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in chest.Where(c => c.Amount > 0))
@@ -220,7 +227,10 @@ public static class ChestComparer
             var missing = new List<ItemAmount>();
             var kept = new List<ItemAmount>();
             var lost = new List<ItemAmount>();
-            var death = lastDeath.GetValueOrDefault(player.Key);
+            var playerDeaths = lastDeath.GetValueOrDefault(player.Key);
+            KillEntry? DeathAfter(LootEntry pickup) =>
+                playerDeaths is not null && playerDeaths.TryGetValue(FightOf(fightStarts, pickup.UtcTime), out var d) && pickup.UtcTime <= d.UtcTime ? d : null;
+            KillEntry? shownDeath = null;
 
             foreach (var item in player.GroupBy(l => l.ItemId))
             {
@@ -237,11 +247,13 @@ public static class ChestComparer
 
                 // Deposits go to the pickups after the death first: what was carried when dying was dropped.
                 var notDeposited = looted - matched;
-                var beforeDeath = death is null ? 0 : item.Where(l => l.UtcTime <= death.UtcTime).Sum(l => l.Quantity);
+                var beforeDeath = item.Where(l => DeathAfter(l) is not null).Sum(l => l.Quantity);
                 var lostHere = Math.Min(notDeposited, beforeDeath);
                 if (lostHere > 0)
                 {
                     lost.Add(new ItemAmount(item.Key, first.ItemNameEnglish, lostHere, first.UnitValue));
+                    var death = item.Select(DeathAfter).OfType<KillEntry>().MaxBy(k => k.UtcTime)!;
+                    shownDeath = shownDeath is null || death.UtcTime > shownDeath.UtcTime ? death : shownDeath;
                 }
 
                 if (notDeposited > lostHere)
@@ -258,7 +270,7 @@ public static class ChestComparer
                 missing.OrderByDescending(m => m.TotalValue).ToList(),
                 kept.OrderByDescending(m => m.TotalValue).ToList(),
                 lost.OrderByDescending(m => m.TotalValue).ToList(),
-                lost.Count > 0 ? death : null));
+                shownDeath));
         }
 
         return result.OrderByDescending(r => r.MissingValue).ThenByDescending(r => r.MissingCount).ThenByDescending(r => r.LostCount).ToList();
@@ -272,6 +284,33 @@ public static class ChestComparer
     public static readonly TimeSpan DepositClockSlack = TimeSpan.FromMinutes(30);
 
     private static readonly TimeSpan DeathGap = TimeSpan.FromMinutes(2);
+
+    /// <summary>A pause this long with no pickup or death ends a fight. In the real logs we have, a fight pauses for 13 minutes at most.</summary>
+    private static readonly TimeSpan FightGap = TimeSpan.FromHours(1);
+
+    /// <summary>When each fight starts, in order: events less than <see cref="FightGap"/> apart are one fight.</summary>
+    private static List<DateTime> FightStarts(IEnumerable<DateTime> times)
+    {
+        var starts = new List<DateTime>();
+        DateTime? last = null;
+        foreach (var time in times.Order())
+        {
+            if (last is null || time - last.Value > FightGap)
+            {
+                starts.Add(time);
+            }
+
+            last = time;
+        }
+
+        return starts;
+    }
+
+    private static int FightOf(List<DateTime> starts, DateTime time)
+    {
+        var i = starts.BinarySearch(time);
+        return i >= 0 ? i : ~i - 1;
+    }
 
     /// <summary>
     /// Logs without death rows still show deaths: someone looting a player's body means that player died.

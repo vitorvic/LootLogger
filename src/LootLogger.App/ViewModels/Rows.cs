@@ -1,5 +1,7 @@
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LootLogger.App.Localization;
+using LootLogger.App.Services;
 using LootLogger.Core.Chest;
 using LootLogger.Core.Data;
 using LootLogger.Core.Tracking;
@@ -22,9 +24,23 @@ public sealed record FeedItem(DateTime LocalTime, FeedKind Kind, string Who, str
     public bool IsInfo => Kind == FeedKind.Info;
 }
 
-public sealed class LootRow(LootEntry entry, ItemDatabase items) : ObservableObject
+public sealed class LootRow : ObservableObject
 {
-    public LootEntry Entry { get; } = entry;
+    private readonly ItemDatabase _items;
+    private ImageSource? _icon;
+    private bool _isMine;
+
+    public LootRow(LootEntry entry, ItemDatabase items)
+    {
+        Entry = entry;
+        _items = items;
+        if (items.Get(entry.ItemIndex) is { } item)
+        {
+            _ = LoadIconAsync(item.UniqueName);
+        }
+    }
+
+    public LootEntry Entry { get; }
 
     public string Time => Entry.UtcTime.ToLocalTime().ToString("HH:mm:ss");
     public string LootedBy => Entry.LootedByName;
@@ -38,16 +54,63 @@ public sealed class LootRow(LootEntry entry, ItemDatabase items) : ObservableObj
     public string LootedFromGuild => Entry.LootedFromGuild;
     public string Map => Entry.Cluster;
     public int Quantity => Entry.Quantity;
-    public string Tier => items.Get(Entry.ItemIndex)?.TierLabel is { Length: > 0 } t ? t : "—";
-    public string ItemName => items.Get(Entry.ItemIndex)?.NameFor(Loc.Instance.Language) ?? Entry.ItemNameEnglish;
-    public string Value => Format.Silver(Entry.TotalValue);
+    public string Tier => _items.Get(Entry.ItemIndex)?.TierLabel ?? string.Empty;
+    public string ItemName => _items.Get(Entry.ItemIndex)?.NameFor(Loc.Instance.Language) ?? Entry.ItemNameEnglish;
+
+    /// <summary>"2x Poção de Gigantismo".</summary>
+    public string QuantityAndName => $"{Quantity}x {ItemName}";
+
+    /// <summary>"de NillBlack · PIVAS · Bridgewatch".</summary>
+    public string FromLine => Loc.Instance.Format("LootedFromLine",
+        string.Join(" · ", new[] { LootedFrom, LootedFromGuild, Map }.Where(t => t.Length > 0)));
+
+    public bool HasValue => Entry.TotalValue > 0;
+    public string Value => HasValue ? Format.Compact(Entry.TotalValue) : Loc.Instance["NoPrice"];
+
+    public ImageSource? Icon
+    {
+        get => _icon;
+        private set => SetProperty(ref _icon, value);
+    }
+
+    /// <summary>Picked up by the player running the program.</summary>
+    public bool IsMine
+    {
+        get => _isMine;
+        set => SetProperty(ref _isMine, value);
+    }
 
     public void Relocalize()
     {
         OnPropertyChanged(nameof(ItemName));
+        OnPropertyChanged(nameof(QuantityAndName));
         OnPropertyChanged(nameof(LootedFrom));
+        OnPropertyChanged(nameof(FromLine));
         OnPropertyChanged(nameof(Value));
     }
+
+    private async Task LoadIconAsync(string itemId) => Icon = await ItemIcons.GetAsync(itemId);
+}
+
+public enum LootFilter
+{
+    All,
+    Mine,
+    MyGuild
+}
+
+/// <summary>One line of a "who looted most" ranking.</summary>
+public sealed class RankRow(int rank, string name, string guild, bool isMine, long amount, string amountText)
+{
+    public int Rank => rank;
+    public string Name => name;
+    public string Guild => guild;
+    public bool IsMine => isMine;
+    public long Amount => amount;
+    public string AmountText => amountText;
+
+    /// <summary>Bar length, 0 to 1, compared with first place.</summary>
+    public double BarFraction { get; set; }
 }
 
 public sealed class KillRow(KillEntry entry) : ObservableObject
@@ -112,6 +175,14 @@ public static class Format
     /// <summary>Full number with thousands separators in the chosen language: 840.692 or 840,692.</summary>
     public static string Silver(long value) =>
         value.ToString("#,0", Culture);
+
+    /// <summary>Short form for lists: 433,9K, 31,53M or 950.</summary>
+    public static string Compact(long value) => value switch
+    {
+        >= 1_000_000 => (value / 1_000_000d).ToString("0.##", Culture) + "M",
+        >= 1_000 => (value / 1_000d).ToString("0.#", Culture) + "K",
+        _ => value.ToString(Culture)
+    };
 
     /// <summary>Short form for tiles: 48,2 mi or 48.2M.</summary>
     public static (string Number, string Unit) Short(long value)

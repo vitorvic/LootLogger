@@ -246,6 +246,54 @@
         </Setter>
     </Style>
 
+    <!-- Filter chip (one of several, like Todos / Meu loot) -->
+    <Style x:Key="FilterChip" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd" CornerRadius="999" BorderThickness="1" BorderBrush="{StaticResource LineBrush}" Background="Transparent" Padding="11,4">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldDimBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource GoldBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Item picture with the tier in the corner -->
+    <Style x:Key="ItemIconFrame" TargetType="Border">
+        <Setter Property="Width" Value="42" />
+        <Setter Property="Height" Value="42" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Background" Value="#0F161D" />
+        <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style x:Key="IconTier" TargetType="Border">
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="Margin" Value="0,0,-4,-5" />
+        <Setter Property="Padding" Value="3,0" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Background" Value="{StaticResource SideBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GoldDimBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
     <!-- On/off switch -->
     <Style x:Key="Toggle" TargetType="CheckBox">
         <Setter Property="Cursor" Value="Hand" />

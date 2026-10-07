@@ -240,9 +240,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Feed.Clear();
         LootRows.Clear();
         KillRows.Clear();
-        Guilds.Clear();
-        Guilds.Add(L["AllGuilds"]);
-        SelectedGuildIndex = 0;
+        _lootStatsDirty = true;
+        if (ShowLootStats)
+        {
+            RefreshLootStats();
+        }
         RecomputeChest();
         AddInfo("FeedSessionStarted");
         RefreshTiles();
@@ -258,9 +260,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void OnLoot(LootEntry entry)
     {
         _session.Add(entry);
-        var row = new LootRow(entry, _service.Items);
+        var row = new LootRow(entry, _service.Items) { IsMine = IsMine(entry) };
         LootRows.Insert(0, row);
-        AddGuild(entry.LootedByGuild);
+        _lootStatsDirty = true;
 
         var quantity = entry.Quantity > 1 ? $"{entry.Quantity}× " : string.Empty;
         AddFeed(new FeedItem(
@@ -290,6 +292,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void OnPlayer(LocalPlayer player)
     {
         Player = player;
+        foreach (var row in LootRows)
+        {
+            row.IsMine = IsMine(row.Entry);
+        }
+
+        _lootStatsDirty = true;
+        LootView.Refresh();
+        OnPropertyChanged(nameof(LootSummary));
         UpdateParty();
         RefreshCombatTiles();
         CombatView.Refresh();
@@ -341,6 +351,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             _chestDirty = false;
             RecomputeChest();
         }
+
+        if (_lootStatsDirty && ShowLootStats)
+        {
+            RefreshLootStats();
+        }
     }
 
     private void Relocalize()
@@ -353,11 +368,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             row.Relocalize();
         }
 
-        if (Guilds.Count > 0)
-        {
-            Guilds[0] = L["AllGuilds"];
-        }
-
+        _lootStatsDirty = true;
         UpdateParty();
         RecomputeChest();
         RefreshTiles();

@@ -20,21 +20,45 @@ public sealed partial class MainViewModel
 
     public ICollectionView LootView { get; }
 
-    public ObservableCollection<string> Guilds { get; } = [Loc.Instance["AllGuilds"]];
-
     [ObservableProperty]
     private string _searchText = string.Empty;
 
+    /// <summary>Which loot the list shows: everyone's, only ours, or only our guild's.</summary>
     [ObservableProperty]
-    private int _selectedGuildIndex;
+    private LootFilter _lootFilter;
 
-    public string LootSummary => L.Format("LootSummary",
-        Format.Silver(LootRows.Sum(r => r.Quantity)),
-        LootRows.Select(r => r.LootedBy).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    /// <summary>True on the "Estatísticas" tab, false on "Lista".</summary>
+    [ObservableProperty]
+    private bool _showLootStats;
+
+    public string LootSummary
+    {
+        get
+        {
+            var mine = LootRows.Where(r => r.IsMine).ToList();
+            var text = L.Format("LootSummary",
+                Format.Silver(LootRows.Sum(r => r.Quantity)),
+                Format.Compact(LootRows.Sum(r => r.Entry.TotalValue)));
+            return mine.Count == 0
+                ? text
+                : text + " · " + L.Format("LootSummaryMine", Format.Silver(mine.Sum(r => r.Quantity)), Format.Compact(mine.Sum(r => r.Entry.TotalValue)));
+        }
+    }
 
     partial void OnSearchTextChanged(string value) => LootView.Refresh();
 
-    partial void OnSelectedGuildIndexChanged(int value) => LootView.Refresh();
+    partial void OnLootFilterChanged(LootFilter value) => LootView.Refresh();
+
+    partial void OnShowLootStatsChanged(bool value)
+    {
+        if (value)
+        {
+            RefreshLootStats();
+        }
+    }
+
+    private bool IsMine(LootEntry entry) =>
+        Player is { Name.Length: > 0 } p && string.Equals(entry.LootedByName, p.Name, StringComparison.OrdinalIgnoreCase);
 
     private bool FilterLoot(object o)
     {
@@ -43,10 +67,12 @@ public sealed partial class MainViewModel
             return false;
         }
 
-        if (SelectedGuildIndex > 0 && SelectedGuildIndex < Guilds.Count
-            && !string.Equals(row.LootedByGuild, Guilds[SelectedGuildIndex], StringComparison.OrdinalIgnoreCase))
+        switch (LootFilter)
         {
-            return false;
+            case LootFilter.Mine when !row.IsMine:
+            case LootFilter.MyGuild when Player is not { Guild.Length: > 0 } p
+                                         || !string.Equals(row.LootedByGuild, p.Guild, StringComparison.OrdinalIgnoreCase):
+                return false;
         }
 
         var q = SearchText.Trim();
@@ -57,11 +83,65 @@ public sealed partial class MainViewModel
                || row.Entry.ItemId.Contains(q, StringComparison.OrdinalIgnoreCase);
     }
 
-    private void AddGuild(string guild)
+    // ---------- Loot statistics ----------
+
+    private const int TopCount = 5;
+    private bool _lootStatsDirty = true;
+
+    public ObservableCollection<RankRow> TopByItems { get; } = [];
+
+    public ObservableCollection<RankRow> TopByValue { get; } = [];
+
+    public ObservableCollection<LootRow> TopItems { get; } = [];
+
+    [ObservableProperty]
+    private string _statsItems = "0";
+
+    [ObservableProperty]
+    private string _statsValue = "0";
+
+    [ObservableProperty]
+    private string _statsPlayers = "0";
+
+    [ObservableProperty]
+    private string _statsMine = "0";
+
+    private void RefreshLootStats()
     {
-        if (guild.Length > 0 && !Guilds.Skip(1).Contains(guild, StringComparer.OrdinalIgnoreCase))
+        _lootStatsDirty = false;
+        var players = LootRows
+            .GroupBy(r => r.LootedBy, StringComparer.OrdinalIgnoreCase)
+            .Select(g => (Name: g.First().LootedBy, Guild: g.First().LootedByGuild, Mine: g.First().IsMine,
+                Items: g.Sum(r => (long) r.Quantity), Value: g.Sum(r => r.Entry.TotalValue)))
+            .ToList();
+
+        StatsItems = Format.Silver(LootRows.Sum(r => r.Quantity));
+        StatsValue = Format.Compact(LootRows.Sum(r => r.Entry.TotalValue));
+        StatsPlayers = Format.Silver(players.Count);
+        StatsMine = Format.Compact(LootRows.Where(r => r.IsMine).Sum(r => r.Entry.TotalValue));
+
+        Fill(TopByItems, players.OrderByDescending(p => p.Items).Take(TopCount)
+            .Select((p, i) => new RankRow(i + 1, p.Name, p.Guild, p.Mine, p.Items, Format.Silver(p.Items))));
+        Fill(TopByValue, players.Where(p => p.Value > 0).OrderByDescending(p => p.Value).Take(TopCount)
+            .Select((p, i) => new RankRow(i + 1, p.Name, p.Guild, p.Mine, p.Value, Format.Compact(p.Value))));
+        Fill(TopItems, LootRows.Where(r => r.HasValue).OrderByDescending(r => r.Entry.TotalValue).Take(TopCount));
+    }
+
+    private static void Fill<T>(ObservableCollection<T> target, IEnumerable<T> rows)
+    {
+        target.Clear();
+        foreach (var row in rows)
         {
-            Guilds.Add(guild);
+            target.Add(row);
+        }
+
+        if (target is ObservableCollection<RankRow> ranks && ranks.Count > 0)
+        {
+            var max = Math.Max(1, ranks[0].Amount);
+            foreach (var rank in ranks)
+            {
+                rank.BarFraction = (double) rank.Amount / max;
+            }
         }
     }
 

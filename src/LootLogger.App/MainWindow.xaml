@@ -83,7 +83,7 @@
                         <Button Style="{StaticResource TitleBarButton}" Click="OnMaximize" ToolTip="Maximizar">
                             <TextBlock Text="&#xE922;" FontFamily="Segoe MDL2 Assets" FontSize="10" />
                         </Button>
-                        <Button Style="{StaticResource TitleBarButton}" Click="OnClose" ToolTip="Fechar">
+                        <Button Style="{StaticResource TitleBarButton}" Click="OnClose" ToolTip="Fechar (continua capturando perto do relógio)">
                             <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10" />
                         </Button>
                     </StackPanel>

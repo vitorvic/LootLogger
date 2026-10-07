@@ -10,6 +10,7 @@ namespace LootLogger.App;
 public partial class App : Application
 {
     private MainViewModel? _viewModel;
+    private TrayIcon? _tray;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -24,6 +25,7 @@ public partial class App : Application
             _viewModel = new MainViewModel(new CaptureService(), settings);
             var window = new MainWindow { DataContext = _viewModel };
             window.Show();
+            _tray = new TrayIcon(window);
         }
         catch (Exception error)
         {
@@ -78,6 +80,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _tray?.Dispose();
         _viewModel?.Dispose();
         base.OnExit(e);
     }

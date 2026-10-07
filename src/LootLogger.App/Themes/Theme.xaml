@@ -265,27 +265,39 @@
         </Setter>
     </Style>
 
-    <!-- Filter chip (one of several, like Todos / Meu loot) -->
+    <!-- Several buttons side by side in one box, like the tab menu at the top. -->
+    <Style x:Key="SegmentBox" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource CardBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="3" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Filter button inside a SegmentBox (one of several, like Todos / Meu loot) -->
     <Style x:Key="FilterChip" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Margin" Value="6,0,0,0" />
+        <Setter Property="Margin" Value="1,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" CornerRadius="999" BorderThickness="1" BorderBrush="{StaticResource LineBrush}" Background="Transparent" Padding="11,4">
+                    <Border x:Name="Bd" CornerRadius="7" BorderThickness="1" BorderBrush="Transparent" Background="Transparent" Padding="12,5">
                         <ContentPresenter />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldGlassBrush}" />
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="Transparent" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldGlassBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource GoldLightBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -294,27 +306,29 @@
         </Setter>
     </Style>
 
-    <!-- On/off chip (several can be on at once, like T4 T5 T6) -->
+    <!-- On/off button inside a SegmentBox (several can be on at once, like T4 T5 T6) -->
     <Style x:Key="ToggleChip" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Margin" Value="0,0,6,6" />
+        <Setter Property="Margin" Value="1,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
-                    <Border x:Name="Bd" CornerRadius="999" BorderThickness="1" BorderBrush="{StaticResource LineBrush}" Background="Transparent" Padding="10,3">
+                    <Border x:Name="Bd" CornerRadius="7" BorderThickness="1" BorderBrush="Transparent" Background="Transparent" Padding="11,5">
                         <ContentPresenter />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldGlassBrush}" />
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="Transparent" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldGlassBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource GoldLightBrush}" />
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">

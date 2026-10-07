@@ -74,12 +74,16 @@
                     <TextBlock Text="{l:T SearchHint}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                Visibility="{Binding Text, ElementName=Search, Converter={StaticResource FalseToVisible}}" />
                 </Grid>
-                <RadioButton Style="{StaticResource FilterChip}" GroupName="LootFilter" Content="{l:T FilterAll}"
-                             IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=All}" />
-                <RadioButton Style="{StaticResource FilterChip}" GroupName="LootFilter" Content="{l:T FilterMine}"
-                             IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=Mine}" />
-                <RadioButton Style="{StaticResource FilterChip}" GroupName="LootFilter" Content="{l:T FilterMyGuild}"
-                             IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=MyGuild}" />
+                <Border Style="{StaticResource SegmentBox}" Margin="6,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Style="{StaticResource FilterChip}" GroupName="LootFilter" Content="{l:T FilterAll}"
+                                     IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=All}" />
+                        <RadioButton Style="{StaticResource FilterChip}" GroupName="LootFilter" Content="{l:T FilterMine}"
+                                     IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=Mine}" />
+                        <RadioButton Style="{StaticResource FilterChip}" GroupName="LootFilter" Content="{l:T FilterMyGuild}"
+                                     IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=MyGuild}" />
+                    </StackPanel>
+                </Border>
                 <Button Content="{l:T ExportCsv}" Command="{Binding ExportCsvCommand}" Margin="10,0,0,0" />
             </StackPanel>
         </DockPanel>

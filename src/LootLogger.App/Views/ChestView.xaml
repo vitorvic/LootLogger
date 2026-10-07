@@ -223,14 +223,6 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <Style x:Key="FilterSeparator" TargetType="Border">
-            <Setter Property="Width" Value="1" />
-            <Setter Property="Height" Value="16" />
-            <Setter Property="Margin" Value="4,0,10,6" />
-            <Setter Property="Background" Value="{StaticResource LineBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-
         <!-- One player per line, like the guild site: numbers, and the items when opened -->
         <DataTemplate x:Key="PlayerRow">
             <Border BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,0,0,1">
@@ -434,30 +426,34 @@
                 <TextBlock Text="{l:T ChestHint}" FontSize="12.5" Foreground="{StaticResource GoldLightBrush}" TextWrapping="Wrap" />
             </Border>
             <WrapPanel>
-                <Grid Width="170" Margin="0,0,6,6">
+                <Grid Width="170" Margin="0,0,6,6" VerticalAlignment="Center">
                     <TextBox x:Name="PlayerSearch" Text="{Binding ChestPlayerSearch, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Text="{l:T SearchPlayer}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                Visibility="{Binding Text, ElementName=PlayerSearch, Converter={StaticResource FalseToVisible}}" />
                 </Grid>
-                <ComboBox ItemsSource="{Binding ChestGuilds}" SelectedIndex="{Binding ChestGuildIndex}" MinWidth="150" Margin="0,0,6,6" />
-                <CheckBox Style="{StaticResource ToggleChip}" Content="{l:T OnlyDebtors}" IsChecked="{Binding OnlyDebtors}"
-                          Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}" />
-                <Border Style="{StaticResource FilterSeparator}" />
-                <ItemsControl ItemsSource="{Binding ChestTiers}" ItemsPanel="{StaticResource RowItems}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Border Style="{StaticResource FilterSeparator}" />
-                <ItemsControl ItemsSource="{Binding ChestKinds}" ItemsPanel="{StaticResource RowItems}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <ComboBox ItemsSource="{Binding ChestGuilds}" SelectedIndex="{Binding ChestGuildIndex}" MinWidth="150" Margin="0,0,6,6" VerticalAlignment="Center" />
+                <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6"
+                        Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}">
+                    <CheckBox Style="{StaticResource ToggleChip}" Content="{l:T OnlyDebtors}" IsChecked="{Binding OnlyDebtors}" />
+                </Border>
+                <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6">
+                    <ItemsControl ItemsSource="{Binding ChestTiers}" ItemsPanel="{StaticResource RowItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+                <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6">
+                    <ItemsControl ItemsSource="{Binding ChestKinds}" ItemsPanel="{StaticResource RowItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
             </WrapPanel>
             </StackPanel>
 

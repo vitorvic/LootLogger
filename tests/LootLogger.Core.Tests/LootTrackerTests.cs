@@ -89,6 +89,15 @@ public class LootTrackerTests
     }
 
     [Fact]
+    public void TrashItems_AreHidden()
+    {
+        Join();
+        Assert.Equal("T1_TRASH", Items.Get(2043)?.UniqueName);
+        Receive(PhotonPackets.Event(Codes.OtherGrabbedLoot, new() { [1] = "A", [2] = "B", [4] = 2043, [5] = 1 }));
+        Assert.Empty(_loot);
+    }
+
+    [Fact]
     public void SamePickupLater_IsNotTreatedAsDuplicate()
     {
         Join();

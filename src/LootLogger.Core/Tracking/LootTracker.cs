@@ -454,6 +454,13 @@ public sealed class LootTracker
 
     private void AddLoot(string lootedBy, string lootedFrom, int itemIndex, int quantity, List<Action> notify, bool isLocal = false)
     {
+        // Broken leftovers of destroyed gear are worth almost nothing; other loggers hide them too.
+        var item = _items.Get(itemIndex);
+        if (item?.UniqueName.EndsWith("_TRASH", StringComparison.Ordinal) == true)
+        {
+            return;
+        }
+
         var isMob = lootedFrom.Contains("@MOB", StringComparison.OrdinalIgnoreCase);
         var fromName = isMob ? MobName : lootedFrom;
 
@@ -468,7 +475,6 @@ public sealed class LootTracker
             return;
         }
 
-        var item = _items.Get(itemIndex);
         var by = _playersByName.GetValueOrDefault(lootedBy);
         var from = isMob ? null : _playersByName.GetValueOrDefault(fromName);
 

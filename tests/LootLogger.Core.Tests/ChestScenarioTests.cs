@@ -290,6 +290,17 @@ public class ChestScenarioTests
     }
 
     [Fact]
+    public void Paste_OfAFourWeekOldPageWithOnlyEarlyDaysOfTheMonth_KeepsTheGamesDates()
+    {
+        // Pasted late on October 8: the page has September 1 to 10 only, and "09/10" could also read as October 9.
+        var lines = Enumerable.Range(1, 10).Select(day => Line(new DateTime(2026, 9, day, 20, 0, 0, DateTimeKind.Utc), "Ana", "T6_BAG", 1));
+
+        var entries = ChestLogParser.Parse(Header + "\n" + string.Join("\n", lines), new DateTime(2026, 10, 8, 23, 0, 0, DateTimeKind.Utc));
+
+        Assert.Equal(new DateTime(2026, 9, 10, 20, 0, 0, DateTimeKind.Utc), entries.Max(e => e.UtcTime));
+    }
+
+    [Fact]
     public void Paste_OfSomethingElse_ReadsNothing()
     {
         Assert.Empty(ChestLogParser.Parse("bom dia\nisso não é log do baú"));

@@ -86,8 +86,8 @@ public static class ChestLogParser
     }
 
     /// <summary>
-    /// Month first unless the paste only makes sense day first (a "25/10" somewhere), or both make
-    /// sense and day first puts the newest line closer to now without going into the future.
+    /// Month first, as the game copies it, unless the paste only makes sense day first: a "25/10" somewhere,
+    /// or month first putting the newest line in the future or further back than the game keeps, and day first not.
     /// </summary>
     private static string[] PickDateFormats(List<string> dates, DateTime now)
     {
@@ -105,12 +105,12 @@ public static class ChestLogParser
             return MonthFirst;
         }
 
-        return Distance(dayFirst.Max()!.Value, now) < Distance(monthFirst.Max()!.Value, now) ? DayFirst : MonthFirst;
+        return !Recent(monthFirst.Max()!.Value, now) && Recent(dayFirst.Max()!.Value, now) ? DayFirst : MonthFirst;
     }
 
-    // How far a log's newest line is from now; a date in the future is very unlikely.
-    private static TimeSpan Distance(DateTime newest, DateTime now) =>
-        newest > now.AddDays(1) ? TimeSpan.MaxValue : (now - newest).Duration();
+    // The game keeps four weeks of chest log (a week more, in case it was pasted a while after copying);
+    // a date in the future is very unlikely.
+    private static bool Recent(DateTime newest, DateTime now) => newest <= now.AddDays(1) && newest >= now.AddDays(-35);
 
     private static bool TryDate(string value, string[] formats, out DateTime time) =>
         DateTime.TryParseExact(value, formats, CultureInfo.InvariantCulture,

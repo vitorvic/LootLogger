@@ -232,7 +232,8 @@ public static class LootFile
 
         // A few chance matches are not enough to move a whole log: two logs of one fight share most
         // of their pickups (84% to 98% in real logs), two different fights (a week of logs, say) almost none.
-        var needed = Math.Max(3, Math.Min(merged.Count, log.Count) / 10);
+        // A tenth of the smaller log, rounded up as the guild site does.
+        var needed = Math.Max(3, (Math.Min(merged.Count, log.Count) + 9) / 10);
         return bestCount >= needed && Math.Abs(best) > window / 2 ? TimeSpan.FromSeconds(best) : TimeSpan.Zero;
 
         static void Use(Dictionary<int, int> uses, int index, int change)

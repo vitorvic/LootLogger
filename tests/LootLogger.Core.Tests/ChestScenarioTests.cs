@@ -374,19 +374,21 @@ public class ChestScenarioTests
         Assert.Contains(loot, l => l.UtcTime == wednesday[0].UtcTime);
     }
 
-    [Fact]
-    public void LootFiles_OfTwoBigFightsWithAFewLookAlikes_AreNotMixed()
+    [Theory]
+    [InlineData(57)]
+    [InlineData(28)] // 31 pickups each: three in common is still less than a tenth
+    public void LootFiles_OfTwoBigFightsWithAFewLookAlikes_AreNotMixed(int bags)
     {
         // Both fights have three equal potions from the same enemy, picked up by Ana within seconds.
         var potions = Enumerable.Range(0, 3).Select(i => Pick("Ana", "T6_POTION_HEAL", minutes: i / 60.0)).ToList();
-        var monday = Enumerable.Range(0, 57).Select(i => Pick("P" + i, "T6_BAG", minutes: i)).Concat(potions).ToList();
-        var wednesday = Enumerable.Range(100, 57).Select(i => Pick("P" + i, "T6_BAG", minutes: i - 100)).Concat(potions)
+        var monday = Enumerable.Range(0, bags).Select(i => Pick("P" + i, "T6_BAG", minutes: i)).Concat(potions).ToList();
+        var wednesday = Enumerable.Range(100, bags).Select(i => Pick("P" + i, "T6_BAG", minutes: i - 100)).Concat(potions)
             .Select(l => l with { UtcTime = l.UtcTime.AddDays(2) }).ToList();
 
         var (loot, _) = LootFile.MergeAll([(monday, []), (wednesday, [])]);
 
-        Assert.Equal(120, loot.Sum(l => l.Quantity));
-        Assert.Equal(60, loot.Count(l => l.UtcTime > Fight.AddDays(1)));
+        Assert.Equal(2 * (bags + 3), loot.Sum(l => l.Quantity));
+        Assert.Equal(bags + 3, loot.Count(l => l.UtcTime > Fight.AddDays(1)));
     }
 
     // ---------- Everything together ----------

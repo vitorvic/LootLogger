@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,6 +19,9 @@ public static class ItemIcons
     private static readonly SemaphoreSlim Downloads = new(4);
     private static readonly ConcurrentDictionary<string, Task<ImageSource?>> Loaded = new(StringComparer.OrdinalIgnoreCase);
 
+    // The image server can be slow to draw a picture it hasn't drawn yet, and a big fight asks for many at once.
+    private static readonly TimeSpan[] RetryDelays = [TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2)];
+
     private static string Folder => Path.Combine(AppPaths.DataFolder, "icons");
 
     /// <summary>The picture for an item id like "T6_HEAD_PLATE_SET1@2"; null when it can't be found.</summary>
@@ -31,17 +35,7 @@ public static class ItemIcons
         {
             if (!File.Exists(path))
             {
-                await Downloads.WaitAsync();
-                try
-                {
-                    var bytes = await Http.GetByteArrayAsync(string.Format(UrlFormat, itemId));
-                    Directory.CreateDirectory(Folder);
-                    await File.WriteAllBytesAsync(path, bytes);
-                }
-                finally
-                {
-                    Downloads.Release();
-                }
+                await DownloadAsync(itemId, path);
             }
 
             return await Task.Run(() => Decode(path));
@@ -59,6 +53,36 @@ public static class ItemIcons
             return null;
         }
     }
+
+    /// <summary>Tries again a few times, so a picture that failed during a fight still reaches its row.</summary>
+    private static async Task DownloadAsync(string itemId, string path)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            await Downloads.WaitAsync();
+            try
+            {
+                var bytes = await Http.GetByteArrayAsync(string.Format(UrlFormat, itemId));
+                Directory.CreateDirectory(Folder);
+                await File.WriteAllBytesAsync(path, bytes);
+                return;
+            }
+            catch (Exception e) when (attempt < RetryDelays.Length && IsTemporary(e))
+            {
+                // Wait below, after giving the download slot to the next picture.
+            }
+            finally
+            {
+                Downloads.Release();
+            }
+
+            await Task.Delay(RetryDelays[attempt]);
+        }
+    }
+
+    // An item the server has no picture for (404) won't get one by asking again.
+    private static bool IsTemporary(Exception e) =>
+        e is TaskCanceledException or HttpRequestException { StatusCode: not HttpStatusCode.NotFound };
 
     private static ImageSource Decode(string path)
     {

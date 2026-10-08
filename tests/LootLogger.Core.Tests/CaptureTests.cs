@@ -55,9 +55,11 @@ public class CaptureTests
         var extractor = new UdpPayloadExtractor();
         extractor.Extract(LinkLayers.Raw, Ipv4Fragments(Udp(61000, 5056, [1, 2, 3]), maxFragmentData: 4000).Single(), DateTime.UtcNow);
         Assert.Equal(0x05000009u, extractor.LastServerAddress);
+        Assert.False(extractor.LastFromServer);
 
         extractor.Extract(LinkLayers.Raw, Ipv4Fragments(Udp(5056, 61000, [1, 2, 3]), maxFragmentData: 4000).Single(), DateTime.UtcNow);
         Assert.Equal(0x0A000002u, extractor.LastServerAddress);
+        Assert.True(extractor.LastFromServer);
     }
 
     [Theory]

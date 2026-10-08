@@ -16,6 +16,12 @@ public abstract class PhotonParser
     private const int FragmentAssemblyTimeoutMilliseconds = 15_000;
     private const int FragmentCleanupIntervalMilliseconds = 1_000;
 
+    // A reliable command is sent again, with the same number, until the other side confirms it. The game drops
+    // the copies; so does this, or a pickup that arrived twice would be counted twice. Copies come within seconds.
+    private const int ResendMemoryMilliseconds = 30_000;
+    private const int MaxRememberedCommands = 65_536;
+    private const int MaxReliableChannels = 64;
+
     /// <summary>Optional sink for parser warnings (malformed packets, lost fragments).</summary>
     public Action<string>? Diagnostic { get; set; }
 
@@ -23,13 +29,27 @@ public abstract class PhotonParser
     private readonly Dictionary<PhotonFragmentKey, PhotonFragmentAssembly> _pendingFragments = new();
     private int _pendingFragmentBytes;
     private long _nextFragmentCleanupTimestamp;
+    private readonly Lock _reliableLock = new();
+    private readonly Dictionary<ChannelKey, ReliableHistory> _reliable = new();
 
     public void ReceivePacket(byte[] payload)
     {
-        ReceivePacket(payload.AsSpan());
+        ReceivePacket(payload.AsSpan(), null);
+    }
+
+    /// <param name="payload">One UDP payload.</param>
+    /// <param name="fromServer">Which side sent it. Knowing it, commands the sender repeated are read only once.</param>
+    public void ReceivePacket(byte[] payload, bool fromServer)
+    {
+        ReceivePacket(payload.AsSpan(), fromServer);
     }
 
     public void ReceivePacket(ReadOnlySpan<byte> payload)
+    {
+        ReceivePacket(payload, null);
+    }
+
+    private void ReceivePacket(ReadOnlySpan<byte> payload, bool? fromServer)
     {
         CleanupExpiredFragmentAssemblies();
 
@@ -43,7 +63,7 @@ public abstract class PhotonParser
                 return;
             }
 
-            ReceiveSinglePacket(remainingPayload[..packetLength]);
+            ReceiveSinglePacket(remainingPayload[..packetLength], fromServer);
             packetOffset += packetLength;
         }
     }
@@ -73,7 +93,7 @@ public abstract class PhotonParser
 
     protected abstract void OnEvent(byte code, Dictionary<byte, object> parameters);
 
-    private void ReceiveSinglePacket(ReadOnlySpan<byte> payload)
+    private void ReceiveSinglePacket(ReadOnlySpan<byte> payload, bool? fromServer)
     {
         if (payload.Length < PhotonHeaderLength)
         {
@@ -133,14 +153,14 @@ public abstract class PhotonParser
 
         for (int commandIndex = 0; commandIndex < commandCount; commandIndex++)
         {
-            if (!HandleCommand(payload, ref offset, peerId, challenge))
+            if (!HandleCommand(payload, ref offset, peerId, challenge, fromServer))
             {
                 return;
             }
         }
     }
 
-    private bool HandleCommand(ReadOnlySpan<byte> source, ref int offset, short peerId, int challenge)
+    private bool HandleCommand(ReadOnlySpan<byte> source, ref int offset, short peerId, int challenge, bool? fromServer)
     {
         int commandStart = offset;
         if (commandStart < 0 || commandStart > source.Length - CommandHeaderLength)
@@ -169,7 +189,7 @@ public abstract class PhotonParser
             return false;
         }
 
-        if (!NumberDeserializer.Deserialize(out int _, source, ref offset))
+        if (!NumberDeserializer.Deserialize(out int reliableSequenceNumber, source, ref offset))
         {
             return false;
         }
@@ -196,16 +216,49 @@ public abstract class PhotonParser
                 commandPayloadLength -= sizeof(int);
                 HandleSendReliable(source, ref offset, commandPayloadLength);
                 break;
-            case CommandType.SendReliable:
+            case CommandType.SendReliable when !IsRepeat(fromServer, peerId, challenge, channelId, reliableSequenceNumber):
                 HandleSendReliable(source, ref offset, commandPayloadLength);
                 break;
-            case CommandType.SendFragment:
+            case CommandType.SendFragment when !IsRepeat(fromServer, peerId, challenge, channelId, reliableSequenceNumber):
                 HandleSendFragment(source, ref offset, commandPayloadLength, peerId, challenge, channelId);
                 break;
         }
 
         offset = commandEnd;
         return true;
+    }
+
+    // True for a reliable command already read: same sender, connection, channel and number.
+    // Each side numbers its own commands, so without knowing the sender nothing is dropped.
+    private bool IsRepeat(bool? fromServer, short peerId, int challenge, byte channelId, int sequenceNumber)
+    {
+        if (fromServer is not { } side)
+        {
+            return false;
+        }
+
+        long timestamp = Environment.TickCount64;
+        var key = new ChannelKey(side, peerId, challenge, channelId);
+        lock (_reliableLock)
+        {
+            if (!_reliable.TryGetValue(key, out ReliableHistory? history))
+            {
+                // A new connection (a new map) or channel: forget the ones that went quiet.
+                foreach (var idle in _reliable.Where(r => timestamp - r.Value.LastSeenTimestamp > ResendMemoryMilliseconds).Select(r => r.Key).ToList())
+                {
+                    _reliable.Remove(idle);
+                }
+
+                if (_reliable.Count >= MaxReliableChannels)
+                {
+                    _reliable.Remove(_reliable.MinBy(r => r.Value.LastSeenTimestamp).Key);
+                }
+
+                _reliable.Add(key, history = new ReliableHistory());
+            }
+
+            return !history.TryAdd(sequenceNumber, timestamp);
+        }
     }
 
     private void HandleSendReliable(ReadOnlySpan<byte> source, ref int offset, int commandLength)
@@ -459,6 +512,37 @@ public abstract class PhotonParser
     private void ReportFragmentLoss(int assemblyCount, int missingFragmentCount, string reason)
     {
         Diagnostic?.Invoke($"Photon fragment assemblies were discarded. Reason={reason}, Assemblies={assemblyCount}, MissingFragments={missingFragmentCount}");
+    }
+
+    /// <summary>One side of one connection, on one channel: each counts its reliable commands on its own.</summary>
+    private readonly record struct ChannelKey(bool FromServer, short PeerId, int Challenge, byte ChannelId);
+
+    /// <summary>The reliable command numbers one side sent on one channel lately.</summary>
+    private sealed class ReliableHistory
+    {
+        private readonly HashSet<int> _seen = [];
+        private readonly Queue<(int SequenceNumber, long Timestamp)> _order = new();
+
+        public long LastSeenTimestamp { get; private set; }
+
+        /// <summary>False when the number was seen already.</summary>
+        public bool TryAdd(int sequenceNumber, long timestamp)
+        {
+            LastSeenTimestamp = timestamp;
+            while (_order.Count > 0
+                   && (timestamp - _order.Peek().Timestamp > ResendMemoryMilliseconds || _order.Count >= MaxRememberedCommands))
+            {
+                _seen.Remove(_order.Dequeue().SequenceNumber);
+            }
+
+            if (!_seen.Add(sequenceNumber))
+            {
+                return false;
+            }
+
+            _order.Enqueue((sequenceNumber, timestamp));
+            return true;
+        }
     }
 
     private static bool ReadByte(out byte value, ReadOnlySpan<byte> source, ref int offset)

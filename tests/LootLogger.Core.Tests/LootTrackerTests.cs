@@ -108,6 +108,17 @@ public class LootTrackerTests
     }
 
     [Fact]
+    public void EqualStacksTakenAtOnce_AreEachRecorded()
+    {
+        // Two equal stacks from one body, or the same drop from two mobs: two pickups in the same instant.
+        Join();
+        Receive(PhotonPackets.Event(Codes.OtherGrabbedLoot, new() { [1] = "@MOB_KEEPER_BRUTE", [2] = "A", [4] = 570, [5] = 2 }));
+        Receive(PhotonPackets.Event(Codes.OtherGrabbedLoot, new() { [1] = "@MOB_KEEPER_BRUTE", [2] = "A", [4] = 570, [5] = 2 }));
+
+        Assert.Equal(2, _loot.Count);
+    }
+
+    [Fact]
     public void LootFromMob_IsNamedMob()
     {
         Join();

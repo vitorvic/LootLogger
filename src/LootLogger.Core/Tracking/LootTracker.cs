@@ -498,12 +498,13 @@ public sealed class LootTracker
 
     /// <summary>
     /// The same pickup can arrive twice: once as our own move and once as a broadcast.
-    /// Our own moves are already counted per item, so two identical ones in a row are two pickups.
+    /// Two identical ones from the same source are two pickups (two equal stacks taken at once, say):
+    /// our own moves are counted per item, and messages the game sent again are dropped when they are read.
     /// </summary>
     private bool IsDuplicate(DateTime now, string key, bool isLocal)
     {
         _recentLoot.RemoveAll(r => now - r.Time > DuplicateWindow);
-        if (_recentLoot.Any(r => r.Key == key && (!isLocal || !r.IsLocal)))
+        if (_recentLoot.Any(r => r.Key == key && r.IsLocal != isLocal))
         {
             return true;
         }

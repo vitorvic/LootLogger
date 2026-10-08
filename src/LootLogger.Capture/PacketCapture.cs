@@ -29,7 +29,8 @@ public sealed class PacketCapture : IDisposable
     // Link type of the first adapter, read once at start: packets arrive on other threads while Stop clears the list.
     private LinkLayers? _primaryLink;
 
-    public event Action<byte[]>? PayloadReceived;
+    /// <summary>A UDP payload of the game, and whether the game server sent it (false: this PC did).</summary>
+    public event Action<byte[], bool>? PayloadReceived;
 
     /// <summary>Raised the first time game traffic is seen after starting.</summary>
     public event Action? GameTrafficDetected;
@@ -161,7 +162,7 @@ public sealed class PacketCapture : IDisposable
     }
 
     /// <summary>Feeds a recorded .pcap file through the same path as live traffic.</summary>
-    public static void Replay(string pcapPath, Action<byte[]> onPayload)
+    public static void Replay(string pcapPath, Action<byte[], bool> onPayload)
     {
         using var reader = new CaptureFileReaderDevice(pcapPath);
         reader.Open();
@@ -171,7 +172,7 @@ public sealed class PacketCapture : IDisposable
             var raw = capture.GetPacket();
             if (extractor.Extract(raw.LinkLayerType, raw.Data, raw.Timeval.Date) is { } payload)
             {
-                onPayload(payload);
+                onPayload(payload, extractor.LastFromServer);
             }
         }
     }
@@ -194,11 +195,13 @@ public sealed class PacketCapture : IDisposable
     private void Handle(RawCapture raw, bool isPrimaryLink)
     {
         byte[]? payload;
+        bool fromServer;
         var serverChanged = false;
         lock (_lock)
         {
             // Several adapters may deliver at once; the extractor keeps fragment state, so serialize.
             payload = _extractor.Extract(raw.LinkLayerType, raw.Data, DateTime.UtcNow);
+            fromServer = _extractor.LastFromServer;
             if (payload is not null && _extractor.LastServerAddress != _serverAddress)
             {
                 _serverAddress = _extractor.LastServerAddress;
@@ -228,7 +231,7 @@ public sealed class PacketCapture : IDisposable
             ServerAddressChanged?.Invoke(_serverAddress);
         }
 
-        PayloadReceived?.Invoke(payload);
+        PayloadReceived?.Invoke(payload, fromServer);
     }
 
     private static void SafeClose(ICaptureDevice device)

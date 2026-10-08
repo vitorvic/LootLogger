@@ -91,13 +91,13 @@ public sealed class CaptureService : IDisposable
         SaveValues();
     }
 
-    private void OnPayload(byte[] payload)
+    private void OnPayload(byte[] payload, bool fromServer)
     {
         lock (_parseLock)
         {
             try
             {
-                _parser.ReceivePacket(payload);
+                _parser.ReceivePacket(payload, fromServer);
             }
             catch (Exception)
             {

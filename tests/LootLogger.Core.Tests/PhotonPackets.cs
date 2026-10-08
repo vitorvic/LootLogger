@@ -39,6 +39,53 @@ internal static class PhotonPackets
         return Packet(ResponseMessage, body);
     }
 
+    /// <summary>
+    /// A copy of a packet from the builders above with another command number, channel or connection.
+    /// The sender numbers each reliable command and sends it again, same number, until it is confirmed.
+    /// </summary>
+    public static byte[] Numbered(byte[] packet, int sequence, byte channel = 0, int challenge = 42)
+    {
+        var copy = packet.ToArray();
+        BinaryPrimitives.WriteInt32BigEndian(copy.AsSpan(8), challenge);
+        copy[13] = channel;
+        BinaryPrimitives.WriteInt32BigEndian(copy.AsSpan(20), sequence);
+        return copy;
+    }
+
+    /// <summary>An event too big for one command, split into fragments numbered from <paramref name="firstSequence"/>, one packet each.</summary>
+    public static List<byte[]> FragmentedEvent(short albionCode, Dictionary<byte, object> parameters, int pieces, int firstSequence)
+    {
+        var body = new List<byte> { 1 };
+        WriteParameters(body, With(parameters, 252, albionCode));
+        var whole = new List<byte> { 0, EventMessage };
+        whole.AddRange(body);
+
+        var packets = new List<byte[]>();
+        var size = (whole.Count + pieces - 1) / pieces;
+        for (var i = 0; i < pieces; i++)
+        {
+            var piece = whole.Skip(i * size).Take(size).ToArray();
+            var commandLength = 12 + 20 + piece.Length;
+            var packet = new byte[12 + commandLength];
+            BinaryPrimitives.WriteInt16BigEndian(packet.AsSpan(0), 0x1234);
+            packet[3] = 1;
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(4), 1000);
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(8), 42);
+            packet[12] = 8; // fragment
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(16), commandLength);
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(20), firstSequence + i);
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(24), firstSequence);
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(28), pieces);
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(32), i);
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(36), whole.Count);
+            BinaryPrimitives.WriteInt32BigEndian(packet.AsSpan(40), i * size);
+            piece.CopyTo(packet, 44);
+            packets.Add(packet);
+        }
+
+        return packets;
+    }
+
     private static Dictionary<byte, object> With(Dictionary<byte, object> parameters, byte key, short code)
     {
         var copy = new Dictionary<byte, object>(parameters) { [key] = (int) code };

@@ -19,6 +19,9 @@ public sealed class UdpPayloadExtractor
     /// <summary>IPv4 address of the game server in the last game packet, as a big-endian number; 0 if unknown.</summary>
     public uint LastServerAddress { get; private set; }
 
+    /// <summary>True when the last game packet came from the game server, false when this PC sent it.</summary>
+    public bool LastFromServer { get; private set; }
+
     /// <summary>Returns the UDP payload when the frame (or the fragment it completes) is game traffic.</summary>
     public byte[]? Extract(LinkLayers linkLayer, byte[] frame, DateTime now)
     {
@@ -34,6 +37,7 @@ public sealed class UdpPayloadExtractor
 
             if (packet.Extract<UdpPacket>() is { } udp && IsGame(udp.SourcePort, udp.DestinationPort))
             {
+                LastFromServer = GamePorts.Contains(udp.SourcePort);
                 return udp.PayloadData;
             }
 
@@ -111,7 +115,8 @@ public sealed class UdpPayloadExtractor
         }
 
         // The server is the side using the game port.
-        LastServerAddress = GamePorts.Contains(src) ? sourceAddress : destinationAddress;
+        LastFromServer = GamePorts.Contains(src);
+        LastServerAddress = LastFromServer ? sourceAddress : destinationAddress;
         return udp[8..];
     }
 

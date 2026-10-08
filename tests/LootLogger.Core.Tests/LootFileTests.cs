@@ -6,7 +6,7 @@ namespace LootLogger.Core.Tests;
 
 public class LootFileTests
 {
-    private static LootEntry Loot(string by, string itemId, int qty, int second, string from = "XAgiota") => new(
+    private static LootEntry Loot(string by, string itemId, int qty, double second, string from = "XAgiota") => new(
         new DateTime(2026, 10, 6, 21, 56, 0, DateTimeKind.Utc).AddSeconds(second),
         by, "PlVAS", "", 0, itemId, "Item", qty, from, "Inimigos", "", 1000, "Sunfang Cliffs");
 
@@ -133,6 +133,86 @@ public class LootFileTests
         var log = new[] { Loot("Ana", "T6_BAG", 1, 0), Loot("Ana", "T6_BAG", 1, 1) };
 
         Assert.Equal(2, LootFile.Merge([log]).Count);
+    }
+
+    [Fact]
+    public void Merge_CountsAPickupTheGameResentOnce()
+    {
+        // A resend comes 0.2 s later, and each wait doubles (0.2 / 0.4 / 0.8 / 1.6 / 3.2 s).
+        var log = new[] { 0, 0.2, 0.6, 1.4, 3, 6.2 }.Select(s => Loot("Ana", "T8_OFF_SHIELD", 1, 10 + s, "ByBlex")).ToList();
+        Assert.Single(LootFile.Merge([log]));
+
+        // The first resend can be lost too; the beat of the others still shows they are resends.
+        var lostFirst = new[] { 0, 0.75, 1.75, 3.75 }.Select(s => Loot("Ana", "T8_OFF_SHIELD", 1, 10 + s, "ByBlex")).ToList();
+        Assert.Single(LootFile.Merge([lostFirst]));
+    }
+
+    [Fact]
+    public void Merge_KeepsEqualPickupsOffTheResendBeat()
+    {
+        var ana = new[] { 0, 0.9, 2.5 }.Select(s => Loot("Ana", "T7_POTION_HEAL", 5, 10 + s));
+        var bia = new[] { 0, 0.2, 0.4, 0.6 }.Select(s => Loot("Bia", "T7_POTION_HEAL", 5, 10 + s));
+
+        Assert.Equal(7, LootFile.Merge([ana.Concat(bia).ToList()]).Count);
+    }
+
+    [Fact]
+    public void Merge_DropsAQuickRepeatOnlyOneLogWroteDown()
+    {
+        var mine = new[] { Loot("Ana", "T7_POTION_HEAL", 4, 10), Loot("Ana", "T7_POTION_HEAL", 4, 10.2) };
+        var theirs = new[] { Loot("Ana", "T7_POTION_HEAL", 4, 11) };
+
+        Assert.Single(LootFile.Merge([mine, theirs]));
+        Assert.Single(LootFile.Merge([theirs, mine]));
+    }
+
+    [Fact]
+    public void Merge_KeepsAQuickRepeatBothLogsSaw()
+    {
+        var mine = new[] { Loot("Ana", "T7_POTION_HEAL", 4, 10), Loot("Ana", "T7_POTION_HEAL", 4, 10.3) };
+        var theirs = new[] { Loot("Ana", "T7_POTION_HEAL", 4, 11), Loot("Ana", "T7_POTION_HEAL", 4, 11.3) };
+
+        Assert.Equal(2, LootFile.Merge([mine, theirs]).Count);
+    }
+
+    [Fact]
+    public void Merge_KeepsAQuickRepeatWhenNoOtherLogWasThere()
+    {
+        var log = new[] { Loot("Ana", "T7_POTION_HEAL", 4, 10), Loot("Ana", "T7_POTION_HEAL", 4, 10.2) };
+
+        Assert.Equal(2, LootFile.Merge([log]).Count);
+    }
+
+    [Fact]
+    public void Merge_KeepsEqualStacksTakenAtOnce()
+    {
+        // The game never resends that fast: it is "take all" on a body with two equal stacks.
+        var mine = new[] { Loot("Ana", "T4_RUNE", 2, 10, "Mob"), Loot("Ana", "T4_RUNE", 2, 10, "Mob") };
+        var theirs = new[] { Loot("Ana", "T4_RUNE", 2, 11, "Mob") };
+
+        Assert.Equal(2, LootFile.Merge([mine, theirs]).Count);
+    }
+
+    [Fact]
+    public void ClockOffset_LinesUpALoggerThatWasMostlyOnAnotherMap()
+    {
+        var mine = Enumerable.Range(0, 40).Select(i => Loot("P" + i, "T8_BAG", 1, i * 10)).ToList();
+        // Only 3 pickups in common (less than a tenth of the log), all 75 s behind.
+        var theirs = mine.Take(3).Select(e => e with { UtcTime = e.UtcTime.AddSeconds(-75) })
+            .Concat(Enumerable.Range(0, 30).Select(i => Loot("Q" + i, "T8_BAG", 1, i * 10))).ToList();
+
+        Assert.Equal(TimeSpan.FromSeconds(75), LootFile.ClockOffset(mine, theirs));
+    }
+
+    [Fact]
+    public void ClockOffset_LeavesTheClockAloneWhenTheFewMatchesDisagree()
+    {
+        var mine = Enumerable.Range(0, 50).Select(i => Loot("P" + i, "T8_BAG", 1, i * 10)).ToList();
+        var theirs = mine.Take(3).Select(e => e with { UtcTime = e.UtcTime.AddSeconds(30) })
+            .Concat(mine.Skip(10).Take(3).Select(e => e with { UtcTime = e.UtcTime.AddSeconds(-40) }))
+            .Concat(Enumerable.Range(0, 44).Select(i => Loot("Q" + i, "T8_BAG", 1, i * 10))).ToList();
+
+        Assert.Equal(TimeSpan.Zero, LootFile.ClockOffset(mine, theirs));
     }
 }
 

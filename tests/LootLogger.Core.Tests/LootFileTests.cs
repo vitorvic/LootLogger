@@ -178,6 +178,51 @@ public class LootFileTests
     }
 
     [Fact]
+    public void Merge_DropsARepeatMostLogsMissed_EvenWhenTwoWroteItDown()
+    {
+        // 15/09: 2 of 5 logs had eltrax's cape twice; the killboard shows one.
+        LootEntry Cape(double s) => Loot("Blake", "T4_CAPEITEM_SMUGGLER@3", 1, s, "eltrax");
+        LootEntry[][] once = [[Cape(10)], [Cape(10.1)], [Cape(10)]];
+        Assert.Single(LootFile.Merge([[Cape(10), Cape(10.2)], [Cape(10.1), Cape(10.3)], .. once]));
+        Assert.Single(LootFile.Merge([.. once, [Cape(10), Cape(10.2)], [Cape(10.1), Cape(10.3)]]));
+
+        // Three of five saw both: two pickups.
+        Assert.Equal(2, LootFile.Merge([[Cape(10), Cape(10.2)], [Cape(10.1), Cape(10.3)], [Cape(10), Cape(10.2)], [Cape(10.1)], [Cape(10)]]).Count);
+    }
+
+    [Fact]
+    public void Merge_DropsARepeatUpTo3_5SecondsLaterThatOnlyOneOfSeveralLogsSaw()
+    {
+        // 15/09: one log had Mirato19's Malevolent Locus again 2 s later; the other four, once.
+        LootEntry Locus(double s) => Loot("Deus", "T6_2H_ENIGMATICORB_MORGANA@2", 1, s, "Mirato19");
+        LootEntry[][] others = [[Locus(10.1)], [Locus(10)], [Locus(10.1)], [Locus(10)]];
+        Assert.Single(LootFile.Merge([[Locus(10), Locus(12)], .. others]));
+
+        // Later than that it may be another real pickup.
+        Assert.Equal(2, LootFile.Merge([[Locus(10), Locus(14)], .. others]).Count);
+    }
+
+    [Fact]
+    public void Merge_DropsAPickupOnlyThePlayersOwnLogSaw_WhenTheOthersSawSomeoneElseTakeIt()
+    {
+        // 15/09: God's log has him taking david2311's bow together with Xk; the other logs only saw Xk.
+        LootEntry Bow(double s, string by) => Loot(by, "T8_2H_LONGBOW@1", 1, s, "david2311");
+        LootEntry[] gods = [Bow(10, "God"), Bow(10.4, "Xk")];
+
+        Assert.Equal(["Xk"], LootFile.Merge([gods, [Bow(10.1, "Xk")], [Bow(10, "Xk")]]).Select(e => e.LootedByName));
+        Assert.Equal(["Xk"], LootFile.Merge([[Bow(10.1, "Xk")], [Bow(10, "Xk")], gods]).Select(e => e.LootedByName));
+    }
+
+    [Fact]
+    public void Merge_KeepsTwoPlayersTakingEqualItemsFromOneBody_WhenTheOtherLogsSawBoth()
+    {
+        LootEntry Bow(double s, string by) => Loot(by, "T8_2H_LONGBOW@1", 1, s, "david2311");
+
+        Assert.Equal(2, LootFile.Merge([[Bow(10, "God"), Bow(10.4, "Xk")], [Bow(10.1, "God"), Bow(10.5, "Xk")]]).Count);
+        Assert.Equal(2, LootFile.Merge([[Bow(10, "God"), Bow(10.4, "Xk")]]).Count);
+    }
+
+    [Fact]
     public void Merge_KeepsAQuickRepeatBothLogsSaw()
     {
         var mine = new[] { Loot("Ana", "T7_POTION_HEAL", 4, 10), Loot("Ana", "T7_POTION_HEAL", 4, 10.3) };

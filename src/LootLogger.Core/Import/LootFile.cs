@@ -19,8 +19,20 @@ public static class LootFile
     /// <summary>Shortest and longest first wait before a resend (it follows each PC's ping).</summary>
     private static readonly TimeSpan MinResendWait = TimeSpan.FromMilliseconds(120), MaxResendWait = TimeSpan.FromMilliseconds(700);
 
-    /// <summary>A repeat between <see cref="MinResendWait"/> and this long after may be a resend or two equal pickups taken together.</summary>
-    private static readonly TimeSpan QuickRepeat = MaxResendWait;
+    /// <summary>
+    /// A repeat between <see cref="MinResendWait"/> and this long after may be a resend or two equal pickups taken together.
+    /// Longer than the first wait because resends sometimes drift off the beat (29/09: copies 0.76 s and 1.04 s later).
+    /// </summary>
+    private static readonly TimeSpan QuickRepeat = TimeSpan.FromSeconds(1.5);
+
+    /// <summary>
+    /// Up to this long after, the other logs can still overrule a repeat: when most logs that saw the pickup missed the copy, it goes.
+    /// Checked on the killboard (15/09 02:23 UTC): Mirato19 had 1 Malevolent Locus and one of 5 logs had another 2 s later.
+    /// </summary>
+    private static readonly TimeSpan SlowRepeat = TimeSpan.FromSeconds(3.5);
+
+    /// <summary>How close, on one log's clock, two players "taking" the same item from the same body are one contest.</summary>
+    private static readonly TimeSpan ContestWindow = TimeSpan.FromSeconds(1);
 
     /// <summary>How far the resends of one message go (6 resends at the longest wait, with some slack).</summary>
     private static readonly TimeSpan ResendHorizon = MaxResendWait * 63 * 1.1;
@@ -238,10 +250,10 @@ public static class LootFile
             {
                 var key = Key(entry);
                 var gap = previous.TryGetValue(key, out var last) ? entry.UtcTime - last.Time : TimeSpan.MaxValue;
-                var quick = gap >= MinResendWait && gap <= QuickRepeat;
+                var repeat = gap >= MinResendWait && gap <= SlowRepeat;
 
-                // A quick repeat only matches a quick repeat of the other log, and a plain pickup a plain one.
-                var match = byKey[key].FirstOrDefault(i => !used.Contains(i) && merged[i].IsQuick == quick && IsSameMoment(merged[i].Entry, entry), -1);
+                // A repeat only matches a repeat of the other log, and a plain pickup a plain one.
+                var match = byKey[key].FirstOrDefault(i => !used.Contains(i) && merged[i].IsRepeat == repeat && IsSameMoment(merged[i].Entry, entry), -1);
                 Seen seen;
                 if (match >= 0)
                 {
@@ -251,19 +263,32 @@ public static class LootFile
                 }
                 else
                 {
-                    seen = new Seen(entry, number, quick ? last.Seen.Repeats ?? last.Seen : null);
+                    seen = new Seen(entry, number, repeat ? last.Seen.Repeats ?? last.Seen : null, repeat && gap <= QuickRepeat);
                     added.Add(seen);
                 }
 
+                seen.SeenAt[number] = entry.UtcTime;
                 previous[key] = (entry.UtcTime, seen);
             }
 
             merged.AddRange(added);
         }
 
-        // A quick repeat that only its own logger wrote down, of a pickup another logger saw too, was a resend.
-        // When no other logger was there it stays: it may be two equal pickups.
-        var loot = merged.Where(s => !(s.Repeats is { Logs.Count: > 1 } && s.Logs.Count == 1)).Select(s => s.Entry).OrderBy(e => e.UtcTime).ToList();
+        // A repeat that most logs which saw the pickup missed was a resend (15/09: 2 of 5 logs had a cape twice and the
+        // body had one). Within QuickRepeat, one other log seeing the pickup without the copy is enough.
+        // When no other log was there it stays: it may be two equal pickups.
+        static bool Resend(Seen s) =>
+            s.Repeats is { } first && (2 * s.Logs.Count < first.Logs.Count || (s.IsQuick && s.Logs.Count == 1 && first.Logs.Count > 1));
+
+        // Sometimes a player's own log shows them taking an item at the same moment another player took it (it looks like
+        // they tried and lost; 15/09: david2311's bow). When the other logs only saw the other player, that row goes.
+        var byItem = merged.ToLookup(s => ItemFrom(s.Entry));
+        bool LostRace(Seen s) =>
+            s.Logs.Count == 1 && s.SeenAt.TryGetValue(s.Logs.First(), out var at) && byItem[ItemFrom(s.Entry)].Any(o =>
+                o.Logs.Count > 1 && o.Entry.LootedByName.ToUpperInvariant() != s.Entry.LootedByName.ToUpperInvariant()
+                && o.SeenAt.TryGetValue(s.Logs.First(), out var otherAt) && (otherAt - at).Duration() <= ContestWindow);
+
+        var loot = merged.Where(s => !Resend(s) && !LostRace(s)).Select(s => s.Entry).OrderBy(e => e.UtcTime).ToList();
         return (loot, offsets);
     }
 
@@ -359,18 +384,27 @@ public static class LootFile
     private static (string, string, int, string) Key(LootEntry e) =>
         (e.LootedByName.ToUpperInvariant(), e.ItemId.ToUpperInvariant(), e.Quantity, e.LootedFromName.ToUpperInvariant());
 
+    private static (string, int, string) ItemFrom(LootEntry e) => (e.ItemId.ToUpperInvariant(), e.Quantity, e.LootedFromName.ToUpperInvariant());
+
     private static bool IsSameMoment(LootEntry a, LootEntry b) => (a.UtcTime - b.UtcTime).Duration() <= SameEventWindow;
 
-    /// <summary>A pickup of the merged result and the logs that saw it.</summary>
-    private sealed class Seen(LootEntry entry, int log, Seen? repeats)
+    /// <summary>A pickup of the merged result, the logs that saw it and when each saw it (clocks lined up).</summary>
+    private sealed class Seen(LootEntry entry, int log, Seen? repeats, bool quick)
     {
         public LootEntry Entry { get; } = entry;
 
         public HashSet<int> Logs { get; } = [log];
 
-        /// <summary>For a quick repeat (a resend, or two equal pickups taken together), the pickup it repeats.</summary>
+        public Dictionary<int, DateTime> SeenAt { get; } = [];
+
+        /// <summary>
+        /// For a repeat up to <see cref="SlowRepeat"/> later (a resend, or two equal pickups taken together), the pickup it repeats.
+        /// </summary>
         public Seen? Repeats { get; } = repeats;
 
-        public bool IsQuick => Repeats is not null;
+        public bool IsRepeat => Repeats is not null;
+
+        /// <summary>The repeat came within <see cref="QuickRepeat"/>.</summary>
+        public bool IsQuick { get; } = quick;
     }
 }

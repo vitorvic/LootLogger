@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Net;
 using LootLogger.Capture;
 using LootLogger.Core.Data;
 using LootLogger.Core.Network;
@@ -88,6 +89,85 @@ public class CaptureTests
 
         var fragments = Ipv4Fragments(Udp(5056, 61000, new byte[3000]), maxFragmentData: 1480);
         Assert.All(fragments, f => Assert.True(RawSocketCapture.IsGamePacket(f)));
+    }
+
+    [Fact]
+    public void RawSockets_OpenAdaptersThatAppearAfterStarting()
+    {
+        // Wi-Fi was there when the app started; then ExitLag (or a VPN) brought up its own adapter.
+        var wifi = IPAddress.Parse("192.168.0.10");
+        var exitLag = IPAddress.Parse("10.8.0.2");
+        var listening = new Dictionary<IPAddress, bool> { [wifi] = true };
+
+        var (close, open) = RawSocketCapture.PlanChanges(listening, [wifi, exitLag]);
+
+        Assert.Empty(close);
+        Assert.Equal([exitLag], open);
+    }
+
+    [Fact]
+    public void RawSockets_FollowAChangeOfNetwork()
+    {
+        // From Wi-Fi to cable: the old address is gone and a new one came up.
+        var wifi = IPAddress.Parse("192.168.0.10");
+        var cable = IPAddress.Parse("192.168.1.20");
+        var listening = new Dictionary<IPAddress, bool> { [wifi] = true };
+
+        var (close, open) = RawSocketCapture.PlanChanges(listening, [cable]);
+
+        Assert.Equal([wifi], close);
+        Assert.Equal([cable], open);
+    }
+
+    [Fact]
+    public void RawSockets_ReopenASocketThatStopped()
+    {
+        // The adapter blinked and its socket stopped, but the address is still there.
+        var wifi = IPAddress.Parse("192.168.0.10");
+        var cable = IPAddress.Parse("192.168.1.20");
+        var listening = new Dictionary<IPAddress, bool> { [wifi] = false, [cable] = true };
+
+        var (close, open) = RawSocketCapture.PlanChanges(listening, [wifi, cable, wifi]);
+
+        Assert.Equal([wifi], close);
+        Assert.Equal([wifi], open);
+    }
+
+    [Fact]
+    public void RawSockets_LeaveEverythingAloneWhenNothingChanged()
+    {
+        var wifi = IPAddress.Parse("192.168.0.10");
+        var exitLag = IPAddress.Parse("10.8.0.2");
+        var listening = new Dictionary<IPAddress, bool> { [wifi] = true, [exitLag] = true };
+
+        var (close, open) = RawSocketCapture.PlanChanges(listening, [exitLag, wifi]);
+
+        Assert.Empty(close);
+        Assert.Empty(open);
+    }
+
+    [Fact]
+    public void RawSockets_KeepListeningThroughTheNetworkCheck()
+    {
+        // Real raw sockets need Windows and administrator rights, like the app; the GitHub runner has both.
+        if (!RawSocketCapture.IsAdministrator())
+        {
+            return;
+        }
+
+        var capture = new RawSocketCapture();
+        capture.Start(_ => { });
+        var addresses = capture.Addresses;
+        Assert.NotEmpty(addresses);
+
+        // One round of the network check: everything that was being read still is.
+        Thread.Sleep(TimeSpan.FromSeconds(6));
+        Assert.True(capture.IsRunning);
+        Assert.Superset(addresses.ToHashSet(), capture.Addresses.ToHashSet());
+
+        capture.Stop();
+        Assert.False(capture.IsRunning);
+        Assert.Empty(capture.Addresses);
     }
 
     [Fact]

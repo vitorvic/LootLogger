@@ -10,6 +10,10 @@ public static class Protocol18Deserializer
 {
     private const byte MaxSlimCustomTypeCode = 228;
 
+    // Game messages nest a few values deep. Without a limit, a packet nesting thousands would
+    // overflow the stack, and that closes the whole app (it cannot be caught).
+    private const int MaxDepth = 32;
+
     private static readonly ThreadLocal<byte[]> ScalarBuffer = new(() => new byte[sizeof(long)]);
 
     private static readonly byte[] BoolMasks =
@@ -133,6 +137,19 @@ public static class Protocol18Deserializer
 
     private static object? Deserialize(ref Protocol18Reader input, byte typeCode)
     {
+        EnterNested(ref input);
+        try
+        {
+            return DeserializeValue(ref input, typeCode);
+        }
+        finally
+        {
+            input.Depth--;
+        }
+    }
+
+    private static object? DeserializeValue(ref Protocol18Reader input, byte typeCode)
+    {
         if (typeCode >= (byte) Protocol18Type.CustomTypeSlim && typeCode <= MaxSlimCustomTypeCode)
         {
             return DeserializeCustomType(ref input, typeCode);
@@ -255,7 +272,7 @@ public static class Protocol18Deserializer
 
     private static string DeserializeString(ref Protocol18Reader input)
     {
-        int stringLength = checked((int) ReadCompressedUInt32(ref input));
+        int stringLength = ReadCount(ref input, bytesEach: 1);
         if (stringLength == 0)
         {
             return string.Empty;
@@ -269,7 +286,7 @@ public static class Protocol18Deserializer
 
     private static byte[] DeserializeByteArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         if (arrayLength == 0)
         {
             return [];
@@ -283,7 +300,7 @@ public static class Protocol18Deserializer
 
     private static short[] DeserializeShortArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: sizeof(short));
         var array = new short[arrayLength];
         for (int i = 0; i < arrayLength; i++)
         {
@@ -295,7 +312,7 @@ public static class Protocol18Deserializer
 
     private static float[] DeserializeFloatArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: sizeof(float));
         int byteLength = checked(arrayLength * sizeof(float));
         var array = new float[arrayLength];
         if (byteLength == 0)
@@ -320,7 +337,7 @@ public static class Protocol18Deserializer
 
     private static double[] DeserializeDoubleArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: sizeof(double));
         int byteLength = checked(arrayLength * sizeof(double));
         var array = new double[arrayLength];
         if (byteLength == 0)
@@ -345,7 +362,7 @@ public static class Protocol18Deserializer
 
     private static bool[] DeserializeBooleanArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadBitCount(ref input);
         var array = new bool[arrayLength];
         int fullByteCount = arrayLength / 8;
         int index = 0;
@@ -379,7 +396,7 @@ public static class Protocol18Deserializer
 
     private static string[] DeserializeStringArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         var array = new string[arrayLength];
         for (int i = 0; i < arrayLength; i++)
         {
@@ -391,7 +408,7 @@ public static class Protocol18Deserializer
 
     private static int[] DeserializeCompressedIntArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         var array = new int[arrayLength];
         for (int i = 0; i < arrayLength; i++)
         {
@@ -403,7 +420,7 @@ public static class Protocol18Deserializer
 
     private static long[] DeserializeCompressedLongArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         var array = new long[arrayLength];
         for (int i = 0; i < arrayLength; i++)
         {
@@ -415,7 +432,7 @@ public static class Protocol18Deserializer
 
     private static object[] DeserializeObjectArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         var array = new object[arrayLength];
         for (int i = 0; i < arrayLength; i++)
         {
@@ -427,7 +444,7 @@ public static class Protocol18Deserializer
 
     private static Hashtable[] DeserializeHashtableArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         var array = new Hashtable[arrayLength];
         for (int i = 0; i < arrayLength; i++)
         {
@@ -440,7 +457,7 @@ public static class Protocol18Deserializer
     private static IDictionary[] DeserializeDictionaryArray(ref Protocol18Reader input)
     {
         Type dictionaryType = DeserializeDictionaryType(ref input, out Protocol18Type keyTypeCode, out Protocol18Type valueTypeCode);
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         var array = (IDictionary[]) Array.CreateInstance(dictionaryType, arrayLength);
 
         for (int i = 0; i < arrayLength; i++)
@@ -459,7 +476,7 @@ public static class Protocol18Deserializer
 
     private static Array? DeserializeArrayInArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         Array? result = null;
         Type? resultType = null;
 
@@ -488,7 +505,8 @@ public static class Protocol18Deserializer
 
     private static Hashtable DeserializeHashtable(ref Protocol18Reader input)
     {
-        int size = checked((int) ReadCompressedUInt32(ref input));
+        // Each entry has at least a key type and a value type.
+        int size = ReadCount(ref input, bytesEach: 2);
         var output = new Hashtable(size);
 
         for (int i = 0; i < size; i++)
@@ -518,6 +536,8 @@ public static class Protocol18Deserializer
 
     private static void DeserializeDictionaryElements(ref Protocol18Reader input, IDictionary dictionary, Protocol18Type keyTypeCode, Protocol18Type valueTypeCode)
     {
+        // Nothing is allocated from this count. An entry can take no bytes only when its key type has
+        // a single value, and then the second entry repeats the key, which Add refuses.
         int size = checked((int) ReadCompressedUInt32(ref input));
         for (int i = 0; i < size; i++)
         {
@@ -547,7 +567,7 @@ public static class Protocol18Deserializer
         Type valueType = valueTypeCode switch
         {
             Protocol18Type.Unknown => typeof(object),
-            Protocol18Type.Dictionary => DeserializeDictionaryType(ref input),
+            Protocol18Type.Dictionary => DeserializeNestedDictionaryType(ref input),
             Protocol18Type.Array => GetDictionaryArrayType(ref input),
             Protocol18Type.ObjectArray => typeof(object[]),
             Protocol18Type.HashtableArray => typeof(Hashtable[]),
@@ -574,12 +594,25 @@ public static class Protocol18Deserializer
         Type valueType = valueTypeCode switch
         {
             Protocol18Type.Unknown => typeof(object),
-            Protocol18Type.Dictionary => DeserializeDictionaryType(ref input),
+            Protocol18Type.Dictionary => DeserializeNestedDictionaryType(ref input),
             Protocol18Type.Array => GetDictionaryArrayType(ref input),
             _ => GetClrArrayType(valueTypeCode),
         };
 
         return typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+    }
+
+    private static Type DeserializeNestedDictionaryType(ref Protocol18Reader input)
+    {
+        EnterNested(ref input);
+        try
+        {
+            return DeserializeDictionaryType(ref input);
+        }
+        finally
+        {
+            input.Depth--;
+        }
     }
 
     private static Type GetDictionaryArrayType(ref Protocol18Reader input)
@@ -589,7 +622,11 @@ public static class Protocol18Deserializer
 
         while (typeCode == Protocol18Type.Array)
         {
-            nestedArrayDepth++;
+            if (++nestedArrayDepth > MaxDepth)
+            {
+                throw new InvalidDataException("Protocol18 array type is nested too deeply.");
+            }
+
             typeCode = (Protocol18Type) ReadByte(ref input);
         }
 
@@ -666,7 +703,7 @@ public static class Protocol18Deserializer
         byte typeCode = slimTypeCode == 0
             ? ReadByte(ref input)
             : (byte) (slimTypeCode - (byte) Protocol18Type.CustomTypeSlim);
-        int length = checked((int) ReadCompressedUInt32(ref input));
+        int length = ReadCount(ref input, bytesEach: 1);
         byte[] data = ReadBytes(ref input, length);
 
         return new Protocol18CustomType(typeCode, data);
@@ -674,18 +711,56 @@ public static class Protocol18Deserializer
 
     private static Protocol18CustomType[] DeserializeCustomTypeArray(ref Protocol18Reader input)
     {
-        int arrayLength = checked((int) ReadCompressedUInt32(ref input));
+        int arrayLength = ReadCount(ref input, bytesEach: 1);
         byte typeCode = ReadByte(ref input);
         var array = new Protocol18CustomType[arrayLength];
 
         for (int i = 0; i < arrayLength; i++)
         {
-            int length = checked((int) ReadCompressedUInt32(ref input));
+            int length = ReadCount(ref input, bytesEach: 1);
             byte[] data = ReadBytes(ref input, length);
             array[i] = new Protocol18CustomType(typeCode, data);
         }
 
         return array;
+    }
+
+    private static void EnterNested(ref Protocol18Reader input)
+    {
+        if (input.Depth >= MaxDepth)
+        {
+            throw new InvalidDataException("Protocol18 data is nested too deeply.");
+        }
+
+        input.Depth++;
+    }
+
+    /// <summary>
+    /// Reads how many elements follow, and refuses the count when the rest of the payload could not
+    /// hold them (each takes at least <paramref name="bytesEach"/> bytes). This runs before anything
+    /// is allocated: otherwise a packet of a few bytes could ask for gigabytes.
+    /// </summary>
+    private static int ReadCount(ref Protocol18Reader input, int bytesEach)
+    {
+        uint count = ReadCompressedUInt32(ref input);
+        if (count > (uint) input.Remaining / (uint) bytesEach)
+        {
+            throw new EndOfStreamException($"Protocol18 declares {count} elements but only {input.Remaining} bytes are left.");
+        }
+
+        return (int) count;
+    }
+
+    /// <summary>Same as <see cref="ReadCount"/> for booleans, which are packed eight to a byte.</summary>
+    private static int ReadBitCount(ref Protocol18Reader input)
+    {
+        uint count = ReadCompressedUInt32(ref input);
+        if (count > (ulong) input.Remaining * 8)
+        {
+            throw new EndOfStreamException($"Protocol18 declares {count} booleans but only {input.Remaining} bytes are left.");
+        }
+
+        return (int) count;
     }
 
     private static int ReadInt1(ref Protocol18Reader input, bool signNegative)

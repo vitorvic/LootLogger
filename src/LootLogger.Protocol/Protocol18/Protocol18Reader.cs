@@ -13,6 +13,11 @@ internal ref struct Protocol18Reader
 
     public int Position { get; private set; }
 
+    public int Remaining => _source.Length - Position;
+
+    /// <summary>How many values deep the reader is; the deserializer stops past its limit.</summary>
+    public int Depth { get; set; }
+
     public byte ReadByte()
     {
         if (Position >= _source.Length)

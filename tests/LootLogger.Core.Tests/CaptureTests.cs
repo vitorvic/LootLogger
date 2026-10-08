@@ -107,6 +107,26 @@ public class CaptureTests
         Assert.Equal(payload, result);
     }
 
+    [Fact]
+    public void Extract_DropsBrokenFramesWithoutThrowing()
+    {
+        // Capture reads anything that reaches the game ports, so the headers can say anything.
+        var random = new Random(7);
+        var extractor = new UdpPayloadExtractor();
+        var valid = Ipv4Fragments(Udp(5056, 61000, new byte[40]), maxFragmentData: 4000).Single();
+        for (var i = 0; i < 20_000; i++)
+        {
+            var frame = valid.ToArray();
+            for (var changes = random.Next(1, 4); changes > 0; changes--)
+            {
+                frame[random.Next(0, 28)] = (byte) random.Next(256);
+            }
+
+            frame = frame[..random.Next(1, frame.Length + 1)];
+            Assert.Null(Record.Exception(() => extractor.Extract(LinkLayers.Raw, frame, DateTime.UtcNow)));
+        }
+    }
+
     private static byte[] Udp(ushort src, ushort dst, byte[] payload)
     {
         var udp = new byte[8 + payload.Length];

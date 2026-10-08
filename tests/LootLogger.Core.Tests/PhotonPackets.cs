@@ -17,6 +17,14 @@ internal static class PhotonPackets
         return Packet(EventMessage, body);
     }
 
+    /// <summary>An event whose parameter table is given byte for byte, to send malformed or hostile data.</summary>
+    public static byte[] RawEvent(byte[] parameterTable)
+    {
+        var body = new List<byte> { 1 };
+        body.AddRange(parameterTable);
+        return Packet(EventMessage, body);
+    }
+
     public static byte[] Request(short albionCode, Dictionary<byte, object> parameters)
     {
         var body = new List<byte> { 1 };

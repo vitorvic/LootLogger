@@ -26,6 +26,9 @@ public sealed class PacketCapture : IDisposable
     private readonly Lock _lock = new();
     private PcapFileWriter? _recorder;
 
+    // Link type of the first adapter, read once at start: packets arrive on other threads while Stop clears the list.
+    private LinkLayers? _primaryLink;
+
     public event Action<byte[]>? PayloadReceived;
 
     /// <summary>Raised the first time game traffic is seen after starting.</summary>
@@ -110,6 +113,7 @@ public sealed class PacketCapture : IDisposable
             throw new InvalidOperationException("Nenhuma placa de rede pôde ser aberta pelo Npcap.");
         }
 
+        _primaryLink = _devices[0].LinkType;
         OpenRecorder(recordPath, _devices[0].LinkType);
     }
 
@@ -148,6 +152,7 @@ public sealed class PacketCapture : IDisposable
         }
 
         _devices.Clear();
+        _primaryLink = null;
         lock (_lock)
         {
             _recorder?.Dispose();
@@ -175,8 +180,15 @@ public sealed class PacketCapture : IDisposable
 
     private void OnPacketArrival(object sender, SharpPcap.PacketCapture e)
     {
-        var raw = e.GetPacket();
-        Handle(raw, raw.LinkLayerType == _devices.FirstOrDefault()?.LinkType);
+        try
+        {
+            var raw = e.GetPacket();
+            Handle(raw, raw.LinkLayerType == _primaryLink);
+        }
+        catch (Exception)
+        {
+            // An error escaping Npcap's thread would stop the capture or close the app.
+        }
     }
 
     private void Handle(RawCapture raw, bool isPrimaryLink)

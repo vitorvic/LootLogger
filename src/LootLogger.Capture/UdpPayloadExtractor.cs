@@ -22,27 +22,27 @@ public sealed class UdpPayloadExtractor
     /// <summary>Returns the UDP payload when the frame (or the fragment it completes) is game traffic.</summary>
     public byte[]? Extract(LinkLayers linkLayer, byte[] frame, DateTime now)
     {
-        Packet packet;
+        // The packet library reads headers only when asked, so a malformed frame can throw from any
+        // of these steps, not just the first. A bad frame is dropped; capture goes on.
         try
         {
-            packet = Packet.ParsePacket(linkLayer, frame);
+            var packet = Packet.ParsePacket(linkLayer, frame);
+            if (packet.Extract<IPv4Packet>() is { } ipv4)
+            {
+                return ExtractIpv4(ipv4, now);
+            }
+
+            if (packet.Extract<UdpPacket>() is { } udp && IsGame(udp.SourcePort, udp.DestinationPort))
+            {
+                return udp.PayloadData;
+            }
+
+            return null;
         }
         catch (Exception)
         {
             return null;
         }
-
-        if (packet.Extract<IPv4Packet>() is { } ipv4)
-        {
-            return ExtractIpv4(ipv4, now);
-        }
-
-        if (packet.Extract<UdpPacket>() is { } udp && IsGame(udp.SourcePort, udp.DestinationPort))
-        {
-            return udp.PayloadData;
-        }
-
-        return null;
     }
 
     private byte[]? ExtractIpv4(IPv4Packet ip, DateTime now)

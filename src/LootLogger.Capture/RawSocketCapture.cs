@@ -107,7 +107,14 @@ public sealed class RawSocketCapture
 
             if (length > 0 && IsGamePacket(buffer.AsSpan(0, length)))
             {
-                onPacket(buffer[..length]);
+                try
+                {
+                    onPacket(buffer[..length]);
+                }
+                catch (Exception)
+                {
+                    // One bad packet must not end this thread: that would stop the capture for good.
+                }
             }
         }
     }

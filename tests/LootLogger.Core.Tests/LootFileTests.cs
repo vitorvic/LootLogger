@@ -167,6 +167,17 @@ public class LootFileTests
     }
 
     [Fact]
+    public void Merge_DropsAResendOffTheBeatThatOnlyOneLogWroteDown()
+    {
+        // 29/09: a hammer 0.76 s later, and a helmet with copies 0.2 / 0.63 / 1.04 / 1.86 s later; the other logs saw each once.
+        LootEntry Hammer(double s) => Loot("Bia", "T6_MAIN_HAMMER@2", 1, s, "Inimigo");
+        Assert.Single(LootFile.Merge([[Hammer(10), Hammer(10.76)], [Hammer(11)], [Hammer(12)]]));
+
+        LootEntry Helmet(double s) => Loot("Caio", "T8_HEAD_LEATHER_SET3", 1, s, "Inimigo");
+        Assert.Single(LootFile.Merge([new[] { 0, 0.2, 0.63, 1.04, 1.86 }.Select(s => Helmet(20 + s)).ToList(), [Helmet(22)], [Helmet(21)]]));
+    }
+
+    [Fact]
     public void Merge_KeepsAQuickRepeatBothLogsSaw()
     {
         var mine = new[] { Loot("Ana", "T7_POTION_HEAL", 4, 10), Loot("Ana", "T7_POTION_HEAL", 4, 10.3) };

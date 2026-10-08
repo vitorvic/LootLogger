@@ -19,8 +19,11 @@ public static class LootFile
     /// <summary>Shortest and longest first wait before a resend (it follows each PC's ping).</summary>
     private static readonly TimeSpan MinResendWait = TimeSpan.FromMilliseconds(120), MaxResendWait = TimeSpan.FromMilliseconds(700);
 
-    /// <summary>A repeat between <see cref="MinResendWait"/> and this long after may be a resend or two equal pickups taken together.</summary>
-    private static readonly TimeSpan QuickRepeat = MaxResendWait;
+    /// <summary>
+    /// A repeat between <see cref="MinResendWait"/> and this long after may be a resend or two equal pickups taken together.
+    /// Longer than the first wait because resends sometimes drift off the beat (29/09: copies 0.76 s and 1.04 s later).
+    /// </summary>
+    private static readonly TimeSpan QuickRepeat = TimeSpan.FromSeconds(1.5);
 
     /// <summary>How far the resends of one message go (6 resends at the longest wait, with some slack).</summary>
     private static readonly TimeSpan ResendHorizon = MaxResendWait * 63 * 1.1;

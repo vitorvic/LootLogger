@@ -24,3 +24,7 @@ jobs:
 
       - name: Test
         run: dotnet test -c Release
+
+      # The tests don't touch the app's screens, so build it too: a broken screen fails here, not at release.
+      - name: Build app
+        run: dotnet build src/LootLogger.App -c Release

@@ -186,7 +186,7 @@ public sealed class DamageMeter
 
             if (_partyMemberName(causer) is { } attacker)
             {
-                var c = Combatant(attacker, causer, now);
+                var c = Track(attacker, causer, now);
                 c.Damage += amount;
                 c.MaxHit = Math.Max(c.MaxHit, amount);
                 c.AddToTimeline(_fight.Started, now, amount);
@@ -194,7 +194,7 @@ public sealed class DamageMeter
 
             if (_partyMemberName(target) is { } victim)
             {
-                Combatant(victim, target, now).Taken += amount;
+                Track(victim, target, now).Taken += amount;
             }
 
             return;
@@ -206,7 +206,7 @@ public sealed class DamageMeter
         }
 
         // Healing someone whose health did not move (already full) does nothing.
-        var c2 = Combatant(healer, causer, now);
+        var c2 = Track(healer, causer, now);
         if (previousHealth == newHealth)
         {
             c2.Overheal += amount;
@@ -237,7 +237,7 @@ public sealed class DamageMeter
 
             _combatWasOver = false;
             _inCombat.Add(name);
-            Combatant(name, objectId, now).EnterCombat(now);
+            Track(name, objectId, now).EnterCombat(now);
         }
         else
         {
@@ -295,7 +295,7 @@ public sealed class DamageMeter
         }
     }
 
-    private Combatant Combatant(string name, long objectId, DateTime now)
+    private Combatant Track(string name, long objectId, DateTime now)
     {
         if (!_fight.HasData)
         {

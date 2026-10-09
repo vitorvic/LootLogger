@@ -248,7 +248,7 @@
                                                 <Setter TargetName="Name" Property="Foreground" Value="{StaticResource GoldBrush}" />
                                                 <Setter TargetName="You" Property="Visibility" Value="Visible" />
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding HealBarFraction}" Value="0">
+                                            <DataTrigger Binding="{Binding HasHealBar}" Value="False">
                                                 <Setter TargetName="HealTrack" Property="Visibility" Value="Hidden" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding SortedBy}" Value="{x:Static vm:DamageSort.Damage}">

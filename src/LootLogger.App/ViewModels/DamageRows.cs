@@ -58,6 +58,9 @@ public sealed partial class DamageRow(string name, bool isLocal) : ObservableObj
     private double _healBarFraction;
 
     [ObservableProperty]
+    private bool _hasHealBar;
+
+    [ObservableProperty]
     private DamageBarKind _barKind;
 
     /// <summary>The column the list is sorted by, drawn in gold.</summary>
@@ -75,6 +78,7 @@ public sealed partial class DamageRow(string name, bool isLocal) : ObservableObj
         Percent = percent;
         BarFraction = bar;
         HealBarFraction = healBar;
+        HasHealBar = healBar > 0;
         BarKind = barKind;
         SortedBy = sort;
 

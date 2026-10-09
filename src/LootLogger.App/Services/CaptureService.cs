@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
 using LootLogger.Capture;
+using LootLogger.Core.Combat;
 using LootLogger.Core.Data;
 using LootLogger.Core.Network;
 using LootLogger.Core.Protocol;
@@ -35,7 +36,11 @@ public sealed class CaptureService : IDisposable
         Values = MarketValueCache.Load(AppPaths.MarketValues);
         Tracker = new LootTracker(Codes, Items, Clusters, Values);
 
+        Damage = new DamageMeter(Codes, Tracker.PartyMemberName, () => Tracker.ClusterName, () => Tracker.LocalPlayer?.Name);
+
+        // The tracker goes first so the meter already knows who a new player or map is.
         _parser.MessageReceived += Tracker.Handle;
+        _parser.MessageReceived += Damage.Handle;
         _capture.PayloadReceived += OnPayload;
         _capture.GameTrafficDetected += () => GameTrafficDetected?.Invoke();
         _capture.ServerAddressChanged += address => ServerChanged?.Invoke(GameServers.RegionOf(address));
@@ -50,6 +55,7 @@ public sealed class CaptureService : IDisposable
     public ClusterDatabase Clusters { get; }
     public MarketValueCache Values { get; }
     public LootTracker Tracker { get; }
+    public DamageMeter Damage { get; }
 
     public bool IsRunning => _capture.IsRunning;
 

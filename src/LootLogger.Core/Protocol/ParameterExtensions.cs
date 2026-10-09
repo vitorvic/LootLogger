@@ -22,6 +22,11 @@ public static class ParameterExtensions
         return value is >= int.MinValue and <= int.MaxValue ? (int) value.Value : null;
     }
 
+    public static double? GetDouble(this IReadOnlyDictionary<byte, object> p, byte key)
+    {
+        return p.TryGetValue(key, out var value) ? ToDouble(value) : null;
+    }
+
     public static bool GetBool(this IReadOnlyDictionary<byte, object> p, byte key)
     {
         if (!p.TryGetValue(key, out var value) || value is null)
@@ -58,6 +63,23 @@ public static class ParameterExtensions
                     result.Add(number);
                 }
             }
+        }
+
+        return result;
+    }
+
+    /// <summary>A list of numbers; an entry that is not a number becomes null so positions still line up.</summary>
+    public static List<double?> GetDoubleList(this IReadOnlyDictionary<byte, object> p, byte key)
+    {
+        var result = new List<double?>();
+        if (!p.TryGetValue(key, out var value) || value is null or string || value is not IEnumerable enumerable)
+        {
+            return result;
+        }
+
+        foreach (var item in enumerable)
+        {
+            result.Add(ToDouble(item));
         }
 
         return result;
@@ -115,6 +137,17 @@ public static class ParameterExtensions
             double d => (long) d,
             string str when long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) => parsed,
             _ => null
+        };
+    }
+
+    public static double? ToDouble(object? value)
+    {
+        return value switch
+        {
+            float f when float.IsFinite(f) => f,
+            double d when double.IsFinite(d) => d,
+            float or double => null,
+            _ => ToLong(value)
         };
     }
 

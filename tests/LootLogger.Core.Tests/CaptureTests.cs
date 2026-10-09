@@ -64,6 +64,7 @@ public class CaptureTests
 
     [Theory]
     [InlineData(5, 188, 125, 30, ServerRegion.Americas)]
+    [InlineData(85, 234, 70, 76, ServerRegion.Americas)]
     [InlineData(193, 169, 238, 7, ServerRegion.Europe)]
     [InlineData(5, 45, 187, 200, ServerRegion.Asia)]
     [InlineData(8, 8, 8, 8, ServerRegion.Unknown)]

@@ -38,7 +38,7 @@ public sealed class CaptureService : IDisposable
         _parser.MessageReceived += Tracker.Handle;
         _capture.PayloadReceived += OnPayload;
         _capture.GameTrafficDetected += () => GameTrafficDetected?.Invoke();
-        _capture.ServerAddressChanged += address => ServerChanged?.Invoke(GameServers.RegionOf(address));
+        _capture.ServerAddressChanged += OnServerAddress;
     }
 
     public event Action? GameTrafficDetected;
@@ -89,6 +89,18 @@ public sealed class CaptureService : IDisposable
     {
         _capture.Dispose();
         SaveValues();
+    }
+
+    // The game talks to the main server and the map server at once, so packets alternate between
+    // two addresses. An address we don't know must not wipe a region we already found, or the
+    // title bar flickers several times a second.
+    private void OnServerAddress(uint address)
+    {
+        var region = GameServers.RegionOf(address);
+        if (region != ServerRegion.Unknown)
+        {
+            ServerChanged?.Invoke(region);
+        }
     }
 
     private void OnPayload(byte[] payload, bool fromServer)

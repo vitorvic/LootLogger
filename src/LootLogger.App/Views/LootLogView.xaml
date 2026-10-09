@@ -85,6 +85,7 @@
                     </StackPanel>
                 </Border>
                 <Button Content="{l:T ExportCsv}" Command="{Binding ExportCsvCommand}" Margin="10,0,0,0" />
+                <Button Content="{l:T NewSession}" Command="{Binding NewSessionCommand}" Margin="8,0,0,0" />
             </StackPanel>
         </DockPanel>
 

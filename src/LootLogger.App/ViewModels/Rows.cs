@@ -40,7 +40,16 @@ public sealed class LootRow : ObservableObject
         }
     }
 
-    public LootEntry Entry { get; }
+    public LootEntry Entry { get; private set; }
+
+    /// <summary>The same pickup with a price that arrived later.</summary>
+    public void UpdateEntry(LootEntry entry)
+    {
+        Entry = entry;
+        OnPropertyChanged(nameof(Entry));
+        OnPropertyChanged(nameof(HasValue));
+        OnPropertyChanged(nameof(Value));
+    }
 
     public string Time => Entry.UtcTime.ToLocalTime().ToString("HH:mm:ss");
     public string LootedBy => Entry.LootedByName;

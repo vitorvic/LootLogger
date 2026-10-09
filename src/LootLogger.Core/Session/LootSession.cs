@@ -74,6 +74,38 @@ public sealed class LootSession
         Append(CsvExporter.KillRow(entry), entry.UtcTime);
     }
 
+    /// <summary>
+    /// Swaps rows for updated copies (a price that arrived later) and rewrites the file.
+    /// <paramref name="update"/> returns null to keep a row as it is.
+    /// </summary>
+    /// <returns>How many rows changed.</returns>
+    public int UpdateLoot(Func<LootEntry, LootEntry?> update)
+    {
+        var changed = 0;
+        for (var i = 0; i < _loot.Count; i++)
+        {
+            if (update(_loot[i]) is { } updated && updated != _loot[i])
+            {
+                _loot[i] = updated;
+                changed++;
+            }
+        }
+
+        if (changed > 0 && _autosavePath is not null)
+        {
+            try
+            {
+                File.WriteAllText(_autosavePath, CsvExporter.ToCsv(_loot, _kills), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            }
+            catch (IOException)
+            {
+                // Open in Excel: the next export has the prices.
+            }
+        }
+
+        return changed;
+    }
+
     private void Append(string row, DateTime utcTime)
     {
         if (_autosaveFolder is null)

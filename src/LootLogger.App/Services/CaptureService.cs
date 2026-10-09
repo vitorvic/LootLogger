@@ -33,7 +33,7 @@ public sealed class CaptureService : IDisposable
 
         Items = ItemDatabase.LoadCachedOrBuiltIn(AppPaths.ItemsCache);
         Clusters = ClusterDatabase.LoadBuiltIn();
-        Values = MarketValueCache.Load(AppPaths.MarketValues);
+        Values = MarketValueCache.Load(AppPaths.MarketValues, AppPaths.ReservePrices);
         Tracker = new LootTracker(Codes, Items, Clusters, Values);
 
         Damage = new DamageMeter(Codes, Tracker.PartyMemberName, () => Tracker.ClusterName, () => Tracker.LocalPlayer?.Name);
@@ -80,11 +80,33 @@ public sealed class CaptureService : IDisposable
         }
     }
 
+    /// <summary>Reserve prices for items the game never priced; null when the price list could not be reached.</summary>
+    public async Task<Dictionary<string, long>?> FetchReservePricesAsync(ServerRegion region, IReadOnlyCollection<string> itemIds)
+    {
+        try
+        {
+            return await AlbionDataPrices.FetchAsync(PriceHttp, region, itemIds, DateTime.UtcNow);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static readonly HttpClient PriceHttp = CreatePriceHttp();
+
+    private static HttpClient CreatePriceHttp()
+    {
+        var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("LootLogger");
+        return http;
+    }
+
     public void SaveValues()
     {
         try
         {
-            Values.Save(AppPaths.MarketValues);
+            Values.Save(AppPaths.MarketValues, AppPaths.ReservePrices);
         }
         catch (IOException)
         {

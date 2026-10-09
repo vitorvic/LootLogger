@@ -1,6 +1,7 @@
 namespace LootLogger.Core.Tracking;
 
 /// <summary>Someone picked up an item from a body or bag.</summary>
+/// <param name="IsReservePrice">UnitValue came from the Albion Data Project because the game never priced the item.</param>
 public sealed record LootEntry(
     DateTime UtcTime,
     string LootedByName,
@@ -14,7 +15,8 @@ public sealed record LootEntry(
     string LootedFromGuild,
     string LootedFromAlliance,
     long UnitValue,
-    string Cluster)
+    string Cluster,
+    bool IsReservePrice = false)
 {
     public long TotalValue => UnitValue * Quantity;
 }

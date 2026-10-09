@@ -494,6 +494,7 @@ public sealed class LootTracker
         var by = _playersByName.GetValueOrDefault(lootedBy);
         var from = isMob ? null : _playersByName.GetValueOrDefault(fromName);
 
+        var (unitValue, isReserve) = _values.GetWithReserve(itemIndex);
         var entry = new LootEntry(
             now,
             lootedBy,
@@ -506,8 +507,9 @@ public sealed class LootTracker
             fromName,
             from?.Guild ?? string.Empty,
             from?.Alliance ?? string.Empty,
-            _values.Get(itemIndex),
-            ClusterName);
+            unitValue,
+            ClusterName,
+            isReserve);
 
         notify.Add(() => LootAdded?.Invoke(entry));
     }

@@ -49,6 +49,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         LootView.Filter = FilterLoot;
         InitChest();
         InitDamage();
+        InitPrices();
 
         _service.Tracker.PartyOnly = settings.PartyOnly;
         _service.Tracker.LootAdded += e => _dispatcher.BeginInvoke(() => OnLoot(e));
@@ -267,6 +268,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _chestDirty = true;
         RefreshTiles();
         OnPropertyChanged(nameof(LootSummary));
+        AskReservePrice(entry);
     }
 
     private void OnKill(KillEntry entry)

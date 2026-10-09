@@ -16,6 +16,9 @@ public static class AppPaths
 
     public static string MarketValues => Path.Combine(DataFolder, "market-values.json");
 
+    /// <summary>Prices from the Albion Data Project for items the game never priced.</summary>
+    public static string ReservePrices => Path.Combine(DataFolder, "precos-reserva.json");
+
     /// <summary>Fights kept from the Dano page.</summary>
     public static string SavedFightsFile => Path.Combine(DataFolder, "lutas-salvas.json");
 

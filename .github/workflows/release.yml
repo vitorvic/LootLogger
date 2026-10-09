@@ -46,6 +46,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # The release is named "LootLogger 1.0.N: <summary>", the summary being the last commit's
+      # message, so the release list says what each version changed.
+      - name: Summary
+        shell: pwsh
+        run: |
+          [Console]::OutputEncoding = [Text.Encoding]::UTF8
+          echo "SUMMARY=$(git log -1 --format=%s)" >> $env:GITHUB_ENV
+
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
@@ -64,4 +72,5 @@ jobs:
         run: vpk pack --packId LootLogger --packVersion ${{ env.VERSION }} --packDir publish --mainExe LootLogger.exe --packTitle LootLogger --packAuthors Vitor --icon src/LootLogger.App/Assets/icon.ico
 
       - name: Upload release
-        run: vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "LootLogger ${{ env.VERSION }}" --tag v${{ env.VERSION }} --token ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "LootLogger $($env:VERSION): $($env:SUMMARY)" --tag v${{ env.VERSION }} --token ${{ secrets.GITHUB_TOKEN }}

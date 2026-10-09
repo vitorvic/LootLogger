@@ -106,6 +106,10 @@ public sealed partial class ChestCard(
     [ObservableProperty]
     private bool _isExpanded;
 
+    /// <summary>"2x Elmo de Guardião · 134,6K" for the item picture last clicked; empty when none.</summary>
+    [ObservableProperty]
+    private string _selectedItemText = string.Empty;
+
     public string Player => player;
     public string Guild => guild;
     public bool HasGuild => guild.Length > 0;

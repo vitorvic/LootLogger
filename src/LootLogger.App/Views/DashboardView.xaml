@@ -19,7 +19,7 @@
                         <TextBlock Text="{l:T ExportCsv}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button Content="{l:T NewSession}" Command="{Binding NewSessionCommand}" />
+                <Button Style="{StaticResource StopButton}" Content="{l:T NewSession}" ToolTip="{l:T NewSessionTip}" Command="{Binding NewSessionCommand}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavDashboard}" />
@@ -56,7 +56,7 @@
                 <StackPanel>
                     <TextBlock Style="{StaticResource Label}" Text="{l:T TileValue}" />
                     <TextBlock Style="{StaticResource TileValue}">
-                        <Run Text="{Binding TotalValue, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding TotalValueUnit, Mode=OneWay}" FontSize="14" FontWeight="Medium" Foreground="{StaticResource MutedBrush}" />
+                        <Run Text="{Binding TotalValue, Mode=OneWay}" Foreground="{StaticResource GoldBrush}" /><Run Text=" " /><Run Text="{Binding TotalValueUnit, Mode=OneWay}" FontSize="14" FontWeight="Medium" Foreground="{StaticResource MutedBrush}" />
                     </TextBlock>
                 </StackPanel>
             </Border>
@@ -71,10 +71,9 @@
                         <TextBlock Style="{StaticResource CardHeaderText}" Text="{l:T RecentEvents}" />
                     </DockPanel>
                 </Border>
+                <!-- The list takes the height it needs; what is left shows the empty screen -->
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="12,10,12,4" Text="{l:T NoEventsYet}"
-                               Visibility="{Binding HasFeed, Converter={StaticResource FalseToVisible}}" />
-                    <ListBox Style="{StaticResource RowList}" ItemsSource="{Binding Feed}">
+                    <ListBox DockPanel.Dock="Top" Style="{StaticResource RowList}" ItemsSource="{Binding Feed}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid>
@@ -105,6 +104,30 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+                    <Grid>
+                        <!-- Before the game is found: the steps to get it going -->
+                        <StackPanel Style="{StaticResource EmptyState}">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                                    <Binding Path="IsPlayerIdentified" Converter="{StaticResource Not}" />
+                                    <Binding Path="HasFeed" Converter="{StaticResource Not}" />
+                                </MultiBinding>
+                            </StackPanel.Visibility>
+                            <TextBlock Style="{StaticResource EmptyTitle}" Text="{l:T EmptyWaitTitle}" />
+                            <TextBlock Style="{StaticResource EmptyText}" TextAlignment="Left" Text="{l:T EmptyWaitSteps}" />
+                        </StackPanel>
+                        <!-- Game found, nothing looted yet -->
+                        <StackPanel Style="{StaticResource EmptyState}">
+                            <StackPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource AllTrueToVisible}">
+                                    <Binding Path="IsPlayerIdentified" />
+                                    <Binding Path="HasFeed" Converter="{StaticResource Not}" />
+                                </MultiBinding>
+                            </StackPanel.Visibility>
+                            <TextBlock Style="{StaticResource EmptyTitle}" Text="{l:T EmptyReadyTitle}" />
+                            <TextBlock Style="{StaticResource EmptyText}" Text="{l:T NoEventsYet}" />
+                        </StackPanel>
+                    </Grid>
                 </DockPanel>
             </DockPanel>
         </Border>

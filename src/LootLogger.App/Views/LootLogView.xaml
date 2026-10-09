@@ -10,7 +10,7 @@
                     <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="1" />
                 </Border>
                 <Border Style="{StaticResource IconTier}" Visibility="{Binding Tier, Converter={StaticResource TextToVisible}}">
-                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9.5" Foreground="{StaticResource GoldBrush}" />
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="{StaticResource GoldBrush}" />
                 </Border>
             </Grid>
         </DataTemplate>
@@ -25,9 +25,14 @@
                     <ColumnDefinition Width="64" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Rank}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
-                <TextBlock x:Name="Name" Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" VerticalAlignment="Center" />
-                <Border Grid.Column="2" Height="6" CornerRadius="3" Background="#14FFFFFF" VerticalAlignment="Center">
-                    <Border x:Name="Bar" CornerRadius="3" Background="{StaticResource BlueBrush}" RenderTransformOrigin="0,0.5">
+                <DockPanel Grid.Column="1" Margin="0,0,8,0" VerticalAlignment="Center">
+                    <Border x:Name="You" DockPanel.Dock="Right" Style="{StaticResource YouTag}" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource YouTagText}" Text="{l:T DamageYou}" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </DockPanel>
+                <Border Grid.Column="2" Height="6" CornerRadius="3" Background="{StaticResource TrackBrush}" VerticalAlignment="Center">
+                    <Border CornerRadius="3" Background="{StaticResource BlueBrush}" RenderTransformOrigin="0,0.5">
                         <Border.RenderTransform>
                             <ScaleTransform ScaleX="{Binding BarFraction}" />
                         </Border.RenderTransform>
@@ -37,9 +42,7 @@
             </Grid>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsMine}" Value="True">
-                    <Setter TargetName="Name" Property="Foreground" Value="{StaticResource GoldBrush}" />
-                    <Setter TargetName="Name" Property="FontWeight" Value="SemiBold" />
-                    <Setter TargetName="Bar" Property="Background" Value="{StaticResource GoldBrush}" />
+                    <Setter TargetName="You" Property="Visibility" Value="Visible" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -58,25 +61,38 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Title, List / Statistics tabs, filters -->
-        <DockPanel Grid.Row="0">
-            <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavLootLog}" />
-            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="7" Margin="14,0,0,0" VerticalAlignment="Center" ClipToBounds="True">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton Style="{StaticResource SegmentButton}" GroupName="LootTab" Content="{l:T TabList}" IsChecked="{Binding ShowLootStats, Converter={StaticResource Not}}" />
-                    <RadioButton Style="{StaticResource SegmentButton}" GroupName="LootTab" Content="{l:T TabStats}" IsChecked="{Binding ShowLootStats}" />
+        <!-- Line 1: title, List / Statistics and actions, like every screen. Line 2: search and filters. -->
+        <StackPanel Grid.Row="0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Command="{Binding ExportCsvCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource LineIcon}" Data="{StaticResource IconDownload}" Stroke="{StaticResource FgBrush}" Margin="0,0,7,0" />
+                            <TextBlock Text="{l:T ExportCsv}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource StopButton}" Content="{l:T NewSession}" ToolTip="{l:T NewSessionTip}" Command="{Binding NewSessionCommand}" Margin="8,0,0,0" />
                 </StackPanel>
-            </Border>
-            <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Center"
-                       Visibility="{Binding ShowLootStats, Converter={StaticResource FalseToVisible}}">
-                <Grid Width="200" Margin="0,0,4,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavLootLog}" />
+                    <Border Style="{StaticResource SegmentBox}" Margin="14,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource FilterChip}" GroupName="LootTab" Content="{l:T TabList}" IsChecked="{Binding ShowLootStats, Converter={StaticResource Not}}" />
+                            <RadioButton Style="{StaticResource FilterChip}" GroupName="LootTab" Content="{l:T TabStats}" IsChecked="{Binding ShowLootStats}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </DockPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
+                        Visibility="{Binding ShowLootStats, Converter={StaticResource FalseToVisible}}">
+                <Grid Width="240">
                     <TextBox x:Name="Search" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Padding="28,5,8,5" />
                     <Path Style="{StaticResource LineIcon}" Data="{StaticResource IconSearch}" Stroke="{StaticResource MutedBrush}"
                           HorizontalAlignment="Left" Margin="10,0,0,0" IsHitTestVisible="False" />
                     <TextBlock Text="{l:T SearchHint}" Foreground="{StaticResource MutedBrush}" Margin="30,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                Visibility="{Binding Text, ElementName=Search, Converter={StaticResource FalseToVisible}}" />
                 </Grid>
-                <Border Style="{StaticResource SegmentBox}" Margin="6,0,0,0">
+                <Border Style="{StaticResource SegmentBox}" Margin="8,0,0,0">
                     <StackPanel Orientation="Horizontal">
                         <RadioButton Style="{StaticResource FilterChip}" GroupName="LootFilter" Content="{l:T FilterAll}"
                                      IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=All}" />
@@ -86,67 +102,66 @@
                                      IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=MyGuild}" />
                     </StackPanel>
                 </Border>
-                <Button Command="{Binding ExportCsvCommand}" Margin="10,0,0,0">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Style="{StaticResource LineIcon}" Data="{StaticResource IconDownload}" Stroke="{StaticResource FgBrush}" Margin="0,0,7,0" />
-                        <TextBlock Text="{l:T ExportCsv}" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Content="{l:T NewSession}" Command="{Binding NewSessionCommand}" Margin="8,0,0,0" />
-            </WrapPanel>
-        </DockPanel>
+            </StackPanel>
+        </StackPanel>
 
         <!-- List -->
-        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,14,0,0"
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0"
                 Visibility="{Binding ShowLootStats, Converter={StaticResource FalseToVisible}}">
-            <ListBox Style="{StaticResource RowList}" ItemsSource="{Binding LootView}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid x:Name="Row" Margin="-10,-6" Background="Transparent">
-                            <Grid Margin="14,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="66" />
-                                    <ColumnDefinition Width="150" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Time}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
-                                    <TextBlock x:Name="Who" Text="{Binding LootedBy}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{Binding LootedByGuild}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                                <DockPanel Grid.Column="2" Margin="0,0,12,0">
-                                    <ContentPresenter DockPanel.Dock="Left" Content="{Binding}" ContentTemplate="{StaticResource ItemIcon}" Margin="0,0,12,0" />
-                                    <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding QuantityAndName}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding FromLine}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+            <Grid>
+                <StackPanel Style="{StaticResource EmptyState}">
+                    <StackPanel.Visibility>
+                        <Binding Path="LootRows.Count" Converter="{StaticResource Equals}" ConverterParameter="0" />
+                    </StackPanel.Visibility>
+                    <TextBlock Style="{StaticResource EmptyTitle}" Text="{l:T LootEmptyTitle}" />
+                    <TextBlock Style="{StaticResource EmptyText}" Text="{l:T NoEventsYet}" />
+                </StackPanel>
+                <ListBox Style="{StaticResource RowList}" ItemsSource="{Binding LootView}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid x:Name="Row" Margin="-10,-6" Background="Transparent">
+                                <Grid Margin="14,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="66" />
+                                        <ColumnDefinition Width="150" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Time}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <DockPanel>
+                                            <Border x:Name="You" DockPanel.Dock="Right" Style="{StaticResource YouTag}" Visibility="Collapsed">
+                                                <TextBlock Style="{StaticResource YouTagText}" Text="{l:T DamageYou}" />
+                                            </Border>
+                                            <TextBlock Text="{Binding LootedBy}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding LootedByGuild}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
-                                </DockPanel>
-                                <TextBlock x:Name="Value" Grid.Column="3" Text="{Binding Value}" FontWeight="Medium" Foreground="{StaticResource GoldBrush}"
-                                           HorizontalAlignment="Right" VerticalAlignment="Center" MinWidth="70" TextAlignment="Right" />
+                                    <DockPanel Grid.Column="2" Margin="0,0,12,0">
+                                        <ContentPresenter DockPanel.Dock="Left" Content="{Binding}" ContentTemplate="{StaticResource ItemIcon}" Margin="0,0,12,0" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding QuantityAndName}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding FromLine}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <TextBlock x:Name="Value" Grid.Column="3" Text="{Binding Value}" FontWeight="Medium" Foreground="{StaticResource GoldBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center" MinWidth="70" TextAlignment="Right" />
+                                </Grid>
                             </Grid>
-                        </Grid>
-                        <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding IsMine}" Value="True">
-                                <Setter TargetName="Who" Property="Foreground" Value="{StaticResource GoldBrush}" />
-                                <Setter TargetName="Row" Property="Background">
-                                    <Setter.Value>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                            <GradientStop Color="#1AE0A63A" Offset="0" />
-                                            <GradientStop Color="#00E0A63A" Offset="0.4" />
-                                        </LinearGradientBrush>
-                                    </Setter.Value>
-                                </Setter>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding HasValue}" Value="False">
-                                <Setter TargetName="Value" Property="Foreground" Value="{StaticResource MutedBrush}" />
-                                <Setter TargetName="Value" Property="FontWeight" Value="Normal" />
-                                <Setter TargetName="Value" Property="FontSize" Value="12" />
-                            </DataTrigger>
-                        </DataTemplate.Triggers>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsMine}" Value="True">
+                                    <Setter TargetName="You" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding HasValue}" Value="False">
+                                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource MutedBrush}" />
+                                    <Setter TargetName="Value" Property="FontWeight" Value="Normal" />
+                                    <Setter TargetName="Value" Property="FontSize" Value="12" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
         </Border>
 
         <!-- Statistics -->

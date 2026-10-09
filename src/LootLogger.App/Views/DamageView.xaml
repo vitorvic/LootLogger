@@ -15,10 +15,10 @@
             <Setter Property="HorizontalAlignment" Value="Right" />
         </Style>
 
-        <!-- Gold bar for damage, green for healing, red for damage taken -->
+        <!-- Blue bar for damage (like the loot bars), green for healing, red for damage taken -->
         <Style x:Key="MainBar" TargetType="Border">
             <Setter Property="CornerRadius" Value="3" />
-            <Setter Property="Background" Value="{StaticResource GoldBrush}" />
+            <Setter Property="Background" Value="{StaticResource BlueBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding BarKind}" Value="{x:Static vm:DamageBarKind.Heal}">
                     <Setter Property="Background" Value="{StaticResource GreenBrush}" />
@@ -27,6 +27,40 @@
                     <Setter Property="Background" Value="{StaticResource RedBrush}" />
                 </DataTrigger>
             </Style.Triggers>
+        </Style>
+
+        <!-- "Opções" button that opens the options under it; looks like the other buttons -->
+        <Style x:Key="OptionsButton" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+            <Setter Property="Background" Value="{StaticResource CardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
+            <Setter Property="Padding" Value="13,7" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldGlassBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource GoldLightBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="OptionLine" TargetType="DockPanel">
@@ -45,17 +79,51 @@
         <!-- Title, live or saved, combat status, actions -->
         <DockPanel Grid.Row="0">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid Margin="0,0,8,0">
+                    <!-- While the options are open, a click on the button only closes them (the popup closes itself) -->
+                    <ToggleButton x:Name="OptionsToggle" Style="{StaticResource OptionsButton}" Content="{l:T DamageOptionsButton}"
+                                  IsHitTestVisible="{Binding IsOpen, ElementName=OptionsPopup, Converter={StaticResource Not}}" />
+                    <Popup x:Name="OptionsPopup" IsOpen="{Binding IsChecked, ElementName=OptionsToggle}" PlacementTarget="{Binding ElementName=OptionsToggle}"
+                           Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-200">
+                        <Border Background="{StaticResource PopupBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="10"
+                                Padding="14,12,14,0" Margin="0,6,0,0" Width="300"
+                                TextElement.FontFamily="{StaticResource AppFont}" TextElement.FontSize="13" TextElement.Foreground="{StaticResource FgBrush}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Label}" Text="{l:T DamageOptions}" Margin="0,0,0,12" />
+                                <DockPanel Style="{StaticResource OptionLine}">
+                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageResetOnMap}" VerticalAlignment="Top" />
+                                    <TextBlock Text="{l:T DamageOptResetMap}" TextWrapping="Wrap" Margin="0,0,10,0" />
+                                </DockPanel>
+                                <DockPanel Style="{StaticResource OptionLine}">
+                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageResetBeforeCombat}" VerticalAlignment="Top" />
+                                    <StackPanel Margin="0,0,10,0">
+                                        <TextBlock Text="{l:T DamageOptResetCombat}" TextWrapping="Wrap" />
+                                        <TextBlock Style="{StaticResource Muted}" Text="{l:T DamageOptResetCombatHelp}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <DockPanel Style="{StaticResource OptionLine}">
+                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageSaveBeforeReset}" VerticalAlignment="Top" />
+                                    <TextBlock Text="{l:T DamageOptSave}" TextWrapping="Wrap" Margin="0,0,10,0" />
+                                </DockPanel>
+                                <DockPanel Style="{StaticResource OptionLine}">
+                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageCopyShort}" VerticalAlignment="Top" />
+                                    <TextBlock Text="{l:T DamageOptCopyShort}" TextWrapping="Wrap" Margin="0,0,10,0" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
                 <Button Content="{l:T DamageCopy}" Command="{Binding CopyDamageCommand}" Margin="0,0,8,0" />
                 <Button Content="{l:T DamageSave}" Command="{Binding SaveFightCommand}" Margin="0,0,8,0" />
                 <Button Style="{StaticResource StopButton}" Content="{l:T DamageReset}" Command="{Binding ResetDamageCommand}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Style="{StaticResource PageTitle}" Text="{l:T NavDamage}" />
-                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="7" Margin="14,0,0,0" VerticalAlignment="Center" ClipToBounds="True">
+                <Border Style="{StaticResource SegmentBox}" Margin="14,0,0,0">
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton Style="{StaticResource SegmentButton}" GroupName="DamageMode" Content="{l:T DamageLive}"
+                        <RadioButton Style="{StaticResource FilterChip}" GroupName="DamageMode" Content="{l:T DamageLive}"
                                      IsChecked="{Binding ShowSavedFight, Converter={StaticResource Not}}" />
-                        <RadioButton Style="{StaticResource SegmentButton}" GroupName="DamageMode" Content="{l:T DamageSavedTab}"
+                        <RadioButton Style="{StaticResource FilterChip}" GroupName="DamageMode" Content="{l:T DamageSavedTab}"
                                      IsChecked="{Binding ShowSavedFight}" />
                     </StackPanel>
                 </Border>
@@ -122,16 +190,14 @@
 
         <!-- Party / Highlights / You, sort order -->
         <DockPanel Grid.Row="2" Margin="0,14,0,0">
-            <Border Style="{StaticResource SegmentBox}">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton Style="{StaticResource FilterChip}" GroupName="DamageTab" Content="{l:T DamageTabGroup}"
-                                 IsChecked="{Binding DamageTab, Converter={StaticResource Equals}, ConverterParameter=Group}" />
-                    <RadioButton Style="{StaticResource FilterChip}" GroupName="DamageTab" Content="{l:T DamageTabHighlights}"
-                                 IsChecked="{Binding DamageTab, Converter={StaticResource Equals}, ConverterParameter=Highlights}" />
-                    <RadioButton Style="{StaticResource FilterChip}" GroupName="DamageTab" Content="{l:T DamageTabYou}"
-                                 IsChecked="{Binding DamageTab, Converter={StaticResource Equals}, ConverterParameter=You}" />
-                </StackPanel>
-            </Border>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+                <RadioButton Style="{StaticResource UnderlineTab}" GroupName="DamageTab" Content="{l:T DamageTabGroup}"
+                             IsChecked="{Binding DamageTab, Converter={StaticResource Equals}, ConverterParameter=Group}" />
+                <RadioButton Style="{StaticResource UnderlineTab}" GroupName="DamageTab" Content="{l:T DamageTabHighlights}"
+                             IsChecked="{Binding DamageTab, Converter={StaticResource Equals}, ConverterParameter=Highlights}" />
+                <RadioButton Style="{StaticResource UnderlineTab}" GroupName="DamageTab" Content="{l:T DamageTabYou}"
+                             IsChecked="{Binding DamageTab, Converter={StaticResource Equals}, ConverterParameter=You}" />
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center"
                         Visibility="{Binding DamageTab, Converter={StaticResource Equals}, ConverterParameter=Group}">
                 <TextBlock Style="{StaticResource Muted}" Text="{l:T DamageSortBy}" VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -143,14 +209,16 @@
         <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="270" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Border Style="{StaticResource Card}">
                 <Grid>
-                    <TextBlock Style="{StaticResource Muted}" Text="{Binding DamageEmptyText}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               TextAlignment="Center" Margin="24" FontSize="13"
-                               Visibility="{Binding HasDamage, Converter={StaticResource FalseToVisible}}" />
+                    <StackPanel Style="{StaticResource EmptyState}" Visibility="{Binding HasDamage, Converter={StaticResource FalseToVisible}}">
+                        <TextBlock Style="{StaticResource EmptyTitle}" Text="{l:T DamageEmptyTitle}"
+                                   Visibility="{Binding ShowSavedFight, Converter={StaticResource FalseToVisible}}" />
+                        <TextBlock Style="{StaticResource EmptyText}" Text="{Binding DamageEmptyText}" />
+                    </StackPanel>
 
                     <!-- Party: one line per player -->
                     <DockPanel>
@@ -213,20 +281,20 @@
                                                 </Grid>
 
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,14,0">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock x:Name="Name" Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                                                        <Border x:Name="You" Style="{StaticResource Chip}" BorderBrush="{StaticResource GoldDimBrush}" Padding="5,0" Margin="6,0,0,0" Visibility="Collapsed">
-                                                            <TextBlock Style="{StaticResource ChipText}" FontSize="10" Foreground="{StaticResource GoldLightBrush}" Text="{l:T DamageYou}" />
+                                                    <DockPanel>
+                                                        <Border x:Name="You" DockPanel.Dock="Right" HorizontalAlignment="Left" Style="{StaticResource YouTag}" Visibility="Collapsed">
+                                                            <TextBlock Style="{StaticResource YouTagText}" Text="{l:T DamageYou}" />
                                                         </Border>
-                                                    </StackPanel>
-                                                    <Border Height="6" CornerRadius="3" Background="#14FFFFFF" Margin="0,6,0,0">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                                    </DockPanel>
+                                                    <Border Height="6" CornerRadius="3" Background="{StaticResource TrackBrush}" Margin="0,6,0,0">
                                                         <Border Style="{StaticResource MainBar}" RenderTransformOrigin="0,0.5">
                                                             <Border.RenderTransform>
                                                                 <ScaleTransform ScaleX="{Binding BarFraction}" />
                                                             </Border.RenderTransform>
                                                         </Border>
                                                     </Border>
-                                                    <Border x:Name="HealTrack" Height="3" CornerRadius="2" Background="#0FFFFFFF" Margin="0,3,0,0">
+                                                    <Border x:Name="HealTrack" Height="3" CornerRadius="2" Background="{StaticResource TrackSoftBrush}" Margin="0,3,0,0">
                                                         <Border CornerRadius="2" Background="{StaticResource GreenBrush}" RenderTransformOrigin="0,0.5">
                                                             <Border.RenderTransform>
                                                                 <ScaleTransform ScaleX="{Binding HealBarFraction}" />
@@ -245,7 +313,6 @@
                                         </Border>
                                         <DataTemplate.Triggers>
                                             <DataTrigger Binding="{Binding IsLocal}" Value="True">
-                                                <Setter TargetName="Name" Property="Foreground" Value="{StaticResource GoldBrush}" />
                                                 <Setter TargetName="You" Property="Visibility" Value="Visible" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding HasHealBar}" Value="False">
@@ -292,8 +359,13 @@
                                     <Border Style="{StaticResource Tile}" Margin="4">
                                         <StackPanel>
                                             <TextBlock Style="{StaticResource Label}" Text="{Binding Title}" />
-                                            <TextBlock x:Name="Who" Text="{Binding Who}" FontSize="16" FontWeight="SemiBold" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock x:Name="Value" Text="{Binding Value}" Foreground="{StaticResource GoldLightBrush}" Margin="0,2,0,0" />
+                                            <DockPanel Margin="0,6,0,0">
+                                                <Border x:Name="You" DockPanel.Dock="Right" HorizontalAlignment="Left" Style="{StaticResource YouTag}" Visibility="Collapsed">
+                                                    <TextBlock Style="{StaticResource YouTagText}" Text="{l:T DamageYou}" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Who}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
+                                            <TextBlock x:Name="Value" Text="{Binding Value}" Foreground="{StaticResource FgBrush}" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </Border>
                                     <DataTemplate.Triggers>
@@ -301,7 +373,7 @@
                                             <Setter TargetName="Value" Property="Foreground" Value="{StaticResource GreenBrush}" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsLocal}" Value="True">
-                                            <Setter TargetName="Who" Property="Foreground" Value="{StaticResource GoldBrush}" />
+                                            <Setter TargetName="You" Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
@@ -351,7 +423,7 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Margin="2,0" CornerRadius="3,3,0,0" VerticalAlignment="Bottom" Height="88" Background="{StaticResource GoldBrush}"
+                                            <Border Margin="2,0" CornerRadius="3,3,0,0" VerticalAlignment="Bottom" Height="88" Background="{StaticResource BlueBrush}"
                                                     RenderTransformOrigin="0.5,1" ToolTip="{Binding Tip}">
                                                 <Border.RenderTransform>
                                                     <ScaleTransform ScaleY="{Binding Height}" />
@@ -370,31 +442,12 @@
                 </Grid>
             </Border>
 
-            <!-- Options and saved fights -->
-            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0" Padding="14,12">
+            <!-- Saved fights, only on Salvas (the options moved to the Opções button at the top) -->
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0" Padding="14,12" Width="260"
+                    Visibility="{Binding ShowSavedFight, Converter={StaticResource BoolToVisibility}}">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top">
-                        <TextBlock Style="{StaticResource Label}" Text="{l:T DamageOptions}" Margin="0,0,0,12" />
-                        <DockPanel Style="{StaticResource OptionLine}">
-                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageResetOnMap}" VerticalAlignment="Top" />
-                            <TextBlock Text="{l:T DamageOptResetMap}" TextWrapping="Wrap" Margin="0,0,10,0" />
-                        </DockPanel>
-                        <DockPanel Style="{StaticResource OptionLine}">
-                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageResetBeforeCombat}" VerticalAlignment="Top" />
-                            <StackPanel Margin="0,0,10,0">
-                                <TextBlock Text="{l:T DamageOptResetCombat}" TextWrapping="Wrap" />
-                                <TextBlock Style="{StaticResource Muted}" Text="{l:T DamageOptResetCombatHelp}" Margin="0,2,0,0" />
-                            </StackPanel>
-                        </DockPanel>
-                        <DockPanel Style="{StaticResource OptionLine}">
-                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageSaveBeforeReset}" VerticalAlignment="Top" />
-                            <TextBlock Text="{l:T DamageOptSave}" TextWrapping="Wrap" Margin="0,0,10,0" />
-                        </DockPanel>
-                        <DockPanel Style="{StaticResource OptionLine}">
-                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding DamageCopyShort}" VerticalAlignment="Top" />
-                            <TextBlock Text="{l:T DamageOptCopyShort}" TextWrapping="Wrap" Margin="0,0,10,0" />
-                        </DockPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="{l:T DamageSavedFights}" Margin="0,6,0,8" />
+                        <TextBlock Style="{StaticResource Label}" Text="{l:T DamageSavedFights}" Margin="0,0,0,8" />
                         <TextBlock Style="{StaticResource Muted}" Text="{l:T DamageNoSavedFights}">
                             <TextBlock.Visibility>
                                 <Binding Path="SavedFights.Count" Converter="{StaticResource Equals}" ConverterParameter="0" />
@@ -405,7 +458,7 @@
                         <ItemsControl ItemsSource="{Binding SavedFights}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border x:Name="Fight" CornerRadius="8" Background="#08FFFFFF" Margin="0,0,0,6" Cursor="Hand">
+                                    <Border x:Name="Fight" CornerRadius="8" Background="{StaticResource IconBgBrush}" Margin="0,0,0,6" Cursor="Hand">
                                         <Border.InputBindings>
                                             <MouseBinding MouseAction="LeftClick"
                                                           Command="{Binding DataContext.SelectSavedFightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

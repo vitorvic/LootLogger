@@ -45,6 +45,14 @@
     <SolidColorBrush x:Key="ToggleOnBrush" Color="#663DDC97" />
     <SolidColorBrush x:Key="OnGreenTextBrush" Color="#06120C" />
     <SolidColorBrush x:Key="OnGoldTextBrush" Color="#0A0E13" />
+    <SolidColorBrush x:Key="TrackBrush" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="TrackSoftBrush" Color="#0FFFFFFF" />
+    <SolidColorBrush x:Key="IconBgBrush" Color="#08FFFFFF" />
+    <SolidColorBrush x:Key="ThumbBrush" Color="#26FFFFFF" />
+    <SolidColorBrush x:Key="QuantityBrush" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="FaintLineBrush" Color="#40FFFFFF" />
+    <SolidColorBrush x:Key="DropLineBrush" Color="#2EFFFFFF" />
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#14FFFFFF" />
 
     <!-- Gold button and soft glow behind the window -->
     <LinearGradientBrush x:Key="GoldButtonBrush" StartPoint="0,0" EndPoint="1,1">
@@ -82,7 +90,7 @@
     </Style>
     <Style x:Key="Label" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
-        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontSize" Value="11.5" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style x:Key="TileValue" TargetType="TextBlock">
@@ -129,7 +137,7 @@
         <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
     </Style>
     <Style x:Key="ChipText" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontSize" Value="11.5" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
     </Style>
@@ -139,6 +147,42 @@
         <Setter Property="Padding" Value="5,1" />
         <Setter Property="Margin" Value="0,0,8,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- "você" next to your own name, the same in every list -->
+    <Style x:Key="YouTag" TargetType="Border">
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{StaticResource GoldDimBrush}" />
+        <Setter Property="Padding" Value="6,0,6,1" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="YouTagText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource GoldLightBrush}" />
+    </Style>
+
+    <!-- Empty screen: a short title and what to do next, in the middle of the card -->
+    <Style x:Key="EmptyState" TargetType="StackPanel">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="MaxWidth" Value="420" />
+        <Setter Property="Margin" Value="24" />
+    </Style>
+    <Style x:Key="EmptyTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+    <Style x:Key="EmptyText" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="LineHeight" Value="20" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
 
     <!-- Line icons, 14 px, drawn with Stroke -->
@@ -172,13 +216,17 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
+                    <Grid>
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <!-- Light layer on top while the mouse is over, so every kind of button shows it -->
+                        <Border x:Name="Hover" CornerRadius="9" Background="{StaticResource ButtonHoverBrush}" Visibility="Collapsed" IsHitTestVisible="False" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Opacity" Value="0.88" />
+                            <Setter TargetName="Hover" Property="Visibility" Value="Visible" />
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldBrush}" />
@@ -259,29 +307,6 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
-    <!-- Segmented choice (language) -->
-    <Style x:Key="SegmentButton" TargetType="RadioButton">
-        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" Background="Transparent" CornerRadius="7" Padding="10,4">
-                        <ContentPresenter />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldGlassBrush}" />
-                            <Setter Property="Foreground" Value="{StaticResource GoldLightBrush}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <!-- Several buttons side by side in one box, like the tab menu at the top. -->
     <Style x:Key="SegmentBox" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource CardBrush}" />
@@ -316,6 +341,40 @@
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource GoldGlassBrush}" />
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldGlassBrush}" />
                             <Setter Property="Foreground" Value="{StaticResource GoldLightBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tab that only changes the list below it: underlined, lighter than the boxed choices above -->
+    <Style x:Key="UnderlineTab" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Margin" Value="0,0,20,0" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2" Padding="0,4,0,7">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource FgBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -362,7 +421,7 @@
         <Setter Property="Width" Value="42" />
         <Setter Property="Height" Value="42" />
         <Setter Property="CornerRadius" Value="9" />
-        <Setter Property="Background" Value="#08FFFFFF" />
+        <Setter Property="Background" Value="{StaticResource IconBgBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
@@ -508,10 +567,16 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
-                                <Border x:Name="Bd" BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,0,0,1" Padding="10,6" Background="Transparent">
-                                    <ContentPresenter />
-                                </Border>
+                                <Grid>
+                                    <Border x:Name="Bd" BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,0,0,1" Padding="10,6" Background="Transparent">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <Border x:Name="Focus" BorderBrush="{StaticResource GoldDimBrush}" BorderThickness="1" Visibility="Collapsed" IsHitTestVisible="False" />
+                                </Grid>
                                 <ControlTemplate.Triggers>
+                                    <Trigger Property="IsKeyboardFocused" Value="True">
+                                        <Setter TargetName="Focus" Property="Visibility" Value="Visible" />
+                                    </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
                                     </Trigger>
@@ -526,9 +591,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <Style x:Key="ColumnHeader" TargetType="TextBlock" BasedOn="{StaticResource Label}">
-        <Setter Property="FontSize" Value="11" />
-    </Style>
+    <Style x:Key="ColumnHeader" TargetType="TextBlock" BasedOn="{StaticResource Label}" />
 
     <!-- Scrollbar: thin and dark -->
     <Style TargetType="ScrollBar">
@@ -543,7 +606,7 @@
                             <Thumb>
                                 <Thumb.Template>
                                     <ControlTemplate TargetType="Thumb">
-                                        <Border Background="#26FFFFFF" CornerRadius="4" Margin="1" />
+                                        <Border Background="{StaticResource ThumbBrush}" CornerRadius="4" Margin="1" />
                                     </ControlTemplate>
                                 </Thumb.Template>
                             </Thumb>
@@ -565,7 +628,7 @@
                                     <Thumb>
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="Thumb">
-                                                <Border Background="#26FFFFFF" CornerRadius="4" Margin="1" />
+                                                <Border Background="{StaticResource ThumbBrush}" CornerRadius="4" Margin="1" />
                                             </ControlTemplate>
                                         </Thumb.Template>
                                     </Thumb>

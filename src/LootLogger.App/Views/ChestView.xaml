@@ -47,7 +47,7 @@
                                 </Border>
                                 <StackPanel Grid.Column="1" Margin="9,0,6,0">
                                     <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}" />
-                                    <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Detail}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                                 <Ellipse Grid.Column="2" Width="7" Height="7" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center"
                                          Visibility="{Binding IsLive, Converter={StaticResource BoolToVisibility}}" />
@@ -80,7 +80,7 @@
         <!-- Item picture with tier (top left) and amount (bottom right) -->
         <Style x:Key="TileFrame" TargetType="Border">
             <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Background" Value="#08FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource IconBgBrush}" />
             <Setter Property="BorderThickness" Value="1.5" />
         </Style>
         <Style x:Key="TileTier" TargetType="Border">
@@ -102,57 +102,57 @@
         </Style>
 
         <DataTemplate x:Key="MissingTile">
-            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}">
+            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="OnTileClick">
                 <Border Style="{StaticResource TileFrame}" BorderBrush="{StaticResource RedBrush}">
                     <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
                 </Border>
                 <Border Style="{StaticResource TileTier}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource GoldLightBrush}" />
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="{StaticResource GoldLightBrush}" />
                 </Border>
                 <Border Style="{StaticResource TileQuantity}" Background="{StaticResource RedBrush}" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource OnGoldTextBrush}" />
+                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OnGoldTextBrush}" />
                 </Border>
             </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="KeptTile">
-            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}">
+            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="OnTileClick">
                 <Border Style="{StaticResource TileFrame}" BorderBrush="{StaticResource GreenDimBrush}">
                     <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
                 </Border>
                 <Border Style="{StaticResource TileTier}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource GoldLightBrush}" />
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="{StaticResource GoldLightBrush}" />
                 </Border>
                 <Border Style="{StaticResource TileQuantity}" Background="{StaticResource GreenBrush}" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource OnGreenTextBrush}" />
+                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OnGreenTextBrush}" />
                 </Border>
             </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="PickedTile">
-            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}">
+            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="OnTileClick">
                 <Border Style="{StaticResource TileFrame}" BorderBrush="{StaticResource LineBrush}">
                     <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
                 </Border>
                 <Border Style="{StaticResource TileTier}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource GoldLightBrush}" />
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="{StaticResource GoldLightBrush}" />
                 </Border>
-                <Border Style="{StaticResource TileQuantity}" Background="#33FFFFFF" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource FgBrush}" />
+                <Border Style="{StaticResource TileQuantity}" Background="{StaticResource QuantityBrush}" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource FgBrush}" />
                 </Border>
             </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="LostTile">
-            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}" Opacity="0.75">
-                <Border Style="{StaticResource TileFrame}" BorderBrush="#40FFFFFF">
+            <Grid Width="48" Height="48" Margin="0,0,10,10" ToolTip="{Binding ToolTip}" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="OnTileClick" Opacity="0.75">
+                <Border Style="{StaticResource TileFrame}" BorderBrush="{StaticResource FaintLineBrush}">
                     <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
                 </Border>
                 <Border Style="{StaticResource TileTier}" Visibility="{Binding HasTier, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource GoldLightBrush}" />
+                    <TextBlock Text="{Binding Tier}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="{StaticResource GoldLightBrush}" />
                 </Border>
-                <Border Style="{StaticResource TileQuantity}" Background="#33FFFFFF" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource FgBrush}" />
+                <Border Style="{StaticResource TileQuantity}" Background="{StaticResource QuantityBrush}" Visibility="{Binding ShowQuantity, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding Quantity}" FontFamily="{StaticResource MonoFont}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource FgBrush}" />
                 </Border>
             </Grid>
         </DataTemplate>
@@ -240,9 +240,9 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="{Binding Player}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    <Border Background="{StaticResource GoldGlassBrush}" CornerRadius="5" Padding="6,1" Margin="9,0,0,0" VerticalAlignment="Center"
+                                    <Border Background="{StaticResource TrackBrush}" CornerRadius="5" Padding="6,1" Margin="9,0,0,0" VerticalAlignment="Center"
                                             Visibility="{Binding HasGuild, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock Text="{Binding Guild}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource GoldLightBrush}" />
+                                        <TextBlock Text="{Binding Guild}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" />
                                     </Border>
                                 </StackPanel>
                                 <TextBlock Grid.Column="1" Style="{StaticResource NumberColumn}" Text="{Binding Looted}" />
@@ -287,6 +287,11 @@
                                 </StackPanel>
                                 <ItemsControl ItemsSource="{Binding Kept}" ItemTemplate="{StaticResource KeptTile}" Style="{StaticResource CardItems}" />
                             </StackPanel>
+                            <!-- Name of the item last clicked, so it can be read without holding the mouse over it -->
+                            <Border CornerRadius="7" Background="{StaticResource TrackBrush}" Padding="10,5" Margin="0,0,0,6" HorizontalAlignment="Left"
+                                    Visibility="{Binding SelectedItemText, Converter={StaticResource TextToVisible}}">
+                                <TextBlock Text="{Binding SelectedItemText}" FontSize="12.5" TextWrapping="Wrap" />
+                            </Border>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
@@ -298,207 +303,210 @@
                     <Setter TargetName="MissingColumn" Property="FontWeight" Value="Bold" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasLost}" Value="True">
-                    <Setter TargetName="LostColumn" Property="Foreground" Value="{StaticResource GoldLightBrush}" />
+                    <Setter TargetName="LostColumn" Property="Foreground" Value="{StaticResource FgBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="236" />
-            <ColumnDefinition Width="16" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Style="{StaticResource PageTitle}" Text="{l:T NavChest}" Margin="0,0,0,14" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="236" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <!-- Loot logs -->
-        <Border Grid.Column="0" Style="{StaticResource Card}" Padding="12">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Style="{StaticResource Label}" Text="{l:T LootFiles}" Margin="2,2,0,10" />
-
-                <StackPanel DockPanel.Dock="Bottom">
-                    <Grid Margin="0,8,0,0">
-                        <Rectangle x:Name="DropOutline" RadiusX="10" RadiusY="10" Stroke="#2EFFFFFF" StrokeThickness="1" StrokeDashArray="4 3" />
-                        <Button Command="{Binding PickLootFilesCommand}" Cursor="Hand">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="14">
-                                        <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="{l:T PickFile}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                            <TextBlock Text="{l:T OrDragHere}" FontSize="11" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" />
-                                        </StackPanel>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </Grid>
-                    <StackPanel Margin="2,8,0,0" Visibility="{Binding ChestMergedText, Converter={StaticResource TextToVisible}}">
-                        <TextBlock Text="{Binding ChestMergedText}" FontSize="12" Foreground="{StaticResource GoldLightBrush}" />
-                        <TextBlock Text="{l:T DuplicatesOnce}" FontSize="11" Foreground="{StaticResource MutedBrush}" />
-                    </StackPanel>
-                </StackPanel>
-
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding LootSources}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <CheckBox Style="{StaticResource SourceRow}" IsChecked="{Binding IsChecked}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
-
-        <Grid Grid.Column="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <!-- Chest log -->
-            <StackPanel Grid.Row="0" Orientation="Horizontal">
-                <Button Style="{StaticResource GoButton}" Content="{l:T PasteChestLog}" Command="{Binding PasteChestLogCommand}" Margin="0,0,8,0" />
-                <Button Content="{l:T PickChestLog}" Command="{Binding OpenChestFileCommand}" Margin="0,0,8,0" />
-                <Button Content="{l:T ClearChest}" Command="{Binding ClearChestCommand}" Margin="0,0,8,0"
-                        Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}" />
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,0,0"
-                            Visibility="{Binding ChestMessage, Converter={StaticResource TextToVisible}}">
-                    <Ellipse Width="6" Height="6" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding ChestMessage}" FontSize="12" Foreground="{StaticResource GreenBrush}" Margin="6,0,0,0" VerticalAlignment="Center" />
-                </StackPanel>
-            </StackPanel>
-
-            <!-- Totals -->
-            <UniformGrid Grid.Row="1" Columns="5" Margin="0,12,0,0">
-                <Border Style="{StaticResource Tile}" Margin="0,0,5,0">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileLooted}" />
-                        <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestLooted}" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Tile}" Margin="5,0">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileKept}" />
-                        <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource GreenBrush}" Text="{Binding ChestKept}" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Tile}" Margin="5,0">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileMissing}" />
-                        <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource RedBrush}" Text="{Binding ChestMissing}" />
-                        <TextBlock Text="{Binding ChestMissingValue}" FontSize="11" Foreground="{StaticResource MutedBrush}"
-                                   Visibility="{Binding ChestMissingValue, Converter={StaticResource TextToVisible}}" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Tile}" Margin="5,0">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileLost}" />
-                        <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource GoldLightBrush}" Text="{Binding ChestLost}" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Tile}" Margin="5,0,0,0">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="{l:T TileRate}" />
-                        <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestRate}" />
-                        <Border Height="5" CornerRadius="3" Background="#14FFFFFF" Margin="0,4,0,0">
-                            <Border CornerRadius="3" Background="{StaticResource GoldBrush}" RenderTransformOrigin="0,0.5">
-                                <Border.RenderTransform>
-                                    <ScaleTransform ScaleX="{Binding ChestRateFraction}" />
-                                </Border.RenderTransform>
-                            </Border>
-                        </Border>
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
-
-            <!-- Filters -->
-            <StackPanel Grid.Row="2" Margin="0,12,0,4">
-            <Border CornerRadius="10" Padding="12,9" Margin="0,0,0,10" Background="{StaticResource GoldGlassBrush}"
-                    Visibility="{Binding HasChestLog, Converter={StaticResource FalseToVisible}}">
-                <TextBlock Text="{l:T ChestHint}" FontSize="12.5" Foreground="{StaticResource GoldLightBrush}" TextWrapping="Wrap" />
-            </Border>
-            <WrapPanel>
-                <Grid Width="170" Margin="0,0,6,6" VerticalAlignment="Center">
-                    <TextBox x:Name="PlayerSearch" Text="{Binding ChestPlayerSearch, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Text="{l:T SearchPlayer}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                               Visibility="{Binding Text, ElementName=PlayerSearch, Converter={StaticResource FalseToVisible}}" />
-                </Grid>
-                <ComboBox ItemsSource="{Binding ChestGuilds}" SelectedIndex="{Binding ChestGuildIndex}" MinWidth="150" Margin="0,0,6,6" VerticalAlignment="Center" />
-                <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6"
-                        Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}">
-                    <CheckBox Style="{StaticResource ToggleChip}" Content="{l:T OnlyDebtors}" IsChecked="{Binding OnlyDebtors}" />
-                </Border>
-                <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6">
-                    <ItemsControl ItemsSource="{Binding ChestTiers}" ItemsPanel="{StaticResource RowItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </Border>
-                <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6">
-                    <ItemsControl ItemsSource="{Binding ChestKinds}" ItemsPanel="{StaticResource RowItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </Border>
-            </WrapPanel>
-            </StackPanel>
-
-            <!-- Nothing to show -->
-            <TextBlock Grid.Row="3" Style="{StaticResource Muted}" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,40,0,0"
-                       Text="{Binding ChestEmptyText}" Visibility="{Binding HasChestCards, Converter={StaticResource FalseToVisible}}" />
-
-            <!-- Players -->
-            <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,8,0,0"
-                    Visibility="{Binding HasChestCards, Converter={StaticResource BoolToVisibility}}">
+            <!-- Loot logs -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="12">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="12,10,20,8">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="24" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="84" />
-                                <ColumnDefinition Width="84" />
-                                <ColumnDefinition Width="84" />
-                                <ColumnDefinition Width="84" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Style="{StaticResource Label}" Text="{l:T ColPlayer}" />
-                            <TextBlock Grid.Column="2" Style="{StaticResource Label}" Text="{l:T ColPicked}" HorizontalAlignment="Right" />
-                            <TextBlock Grid.Column="3" Style="{StaticResource Label}" Text="{l:T ColKept}" HorizontalAlignment="Right" />
-                            <TextBlock Grid.Column="4" Style="{StaticResource Label}" Text="{l:T ColMissingShort}" HorizontalAlignment="Right" />
-                            <TextBlock Grid.Column="5" Style="{StaticResource Label}" Text="{l:T ColDied}" HorizontalAlignment="Right" />
+                    <TextBlock DockPanel.Dock="Top" Style="{StaticResource Label}" Text="{l:T LootFiles}" Margin="2,2,0,10" />
+
+                    <StackPanel DockPanel.Dock="Bottom">
+                        <Grid Margin="0,8,0,0">
+                            <Rectangle x:Name="DropOutline" RadiusX="10" RadiusY="10" Stroke="{StaticResource DropLineBrush}" StrokeThickness="1" StrokeDashArray="4 3" />
+                            <Button Command="{Binding PickLootFilesCommand}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="14">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{l:T PickFile}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                                <TextBlock Text="{l:T OrDragHere}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
                         </Grid>
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding ChestCards}" ItemTemplate="{StaticResource PlayerRow}"
-                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" ScrollViewer.CanContentScroll="True">
-                        <ItemsControl.Template>
-                            <ControlTemplate TargetType="ItemsControl">
-                                <ScrollViewer CanContentScroll="True" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                    <ItemsPresenter />
-                                </ScrollViewer>
-                            </ControlTemplate>
-                        </ItemsControl.Template>
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <VirtualizingStackPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
+                        <StackPanel Margin="2,8,0,0" Visibility="{Binding ChestMergedText, Converter={StaticResource TextToVisible}}">
+                            <TextBlock Text="{Binding ChestMergedText}" FontSize="12" Foreground="{StaticResource FgBrush}" />
+                            <TextBlock Text="{l:T DuplicatesOnce}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding LootSources}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Style="{StaticResource SourceRow}" IsChecked="{Binding IsChecked}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </DockPanel>
             </Border>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Chest log -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <Button Style="{StaticResource GoButton}" Content="{l:T PasteChestLog}" Command="{Binding PasteChestLogCommand}" Margin="0,0,8,0" />
+                    <Button Content="{l:T PickChestLog}" Command="{Binding OpenChestFileCommand}" Margin="0,0,8,0" />
+                    <Button Content="{l:T ClearChest}" Command="{Binding ClearChestCommand}" Margin="0,0,8,0"
+                            Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,0,0"
+                                Visibility="{Binding ChestMessage, Converter={StaticResource TextToVisible}}">
+                        <Ellipse Width="6" Height="6" Fill="{StaticResource GreenBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ChestMessage}" FontSize="12" Foreground="{StaticResource GreenBrush}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Totals -->
+                <UniformGrid Grid.Row="1" Columns="5" Margin="0,12,0,0">
+                    <Border Style="{StaticResource Tile}" Margin="0,0,5,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="{l:T TileLooted}" />
+                            <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestLooted}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Tile}" Margin="5,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="{l:T TileKept}" />
+                            <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource GreenBrush}" Text="{Binding ChestKept}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Tile}" Margin="5,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="{l:T TileMissing}" />
+                            <TextBlock Style="{StaticResource TileValue}" Foreground="{StaticResource RedBrush}" Text="{Binding ChestMissing}" />
+                            <TextBlock Text="{Binding ChestMissingValue}" FontSize="11.5" Foreground="{StaticResource MutedBrush}"
+                                       Visibility="{Binding ChestMissingValue, Converter={StaticResource TextToVisible}}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Tile}" Margin="5,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="{l:T TileLost}" />
+                            <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestLost}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Tile}" Margin="5,0,0,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="{l:T TileRate}" />
+                            <TextBlock Style="{StaticResource TileValue}" Text="{Binding ChestRate}" />
+                            <Border Height="5" CornerRadius="3" Background="{StaticResource TrackBrush}" Margin="0,4,0,0">
+                                <Border CornerRadius="3" Background="{StaticResource GoldBrush}" RenderTransformOrigin="0,0.5">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform ScaleX="{Binding ChestRateFraction}" />
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <!-- Filters -->
+                <StackPanel Grid.Row="2" Margin="0,12,0,4">
+                <Border CornerRadius="10" Padding="12,9" Margin="0,0,0,10" Background="{StaticResource GoldGlassBrush}"
+                        Visibility="{Binding HasChestLog, Converter={StaticResource FalseToVisible}}">
+                    <TextBlock Text="{l:T ChestHint}" FontSize="12.5" Foreground="{StaticResource GoldLightBrush}" TextWrapping="Wrap" />
+                </Border>
+                <WrapPanel>
+                    <Grid Width="170" Margin="0,0,6,6" VerticalAlignment="Center">
+                        <TextBox x:Name="PlayerSearch" Text="{Binding ChestPlayerSearch, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="{l:T SearchPlayer}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                   Visibility="{Binding Text, ElementName=PlayerSearch, Converter={StaticResource FalseToVisible}}" />
+                    </Grid>
+                    <ComboBox ItemsSource="{Binding ChestGuilds}" SelectedIndex="{Binding ChestGuildIndex}" MinWidth="150" Margin="0,0,6,6" VerticalAlignment="Center" />
+                    <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6"
+                            Visibility="{Binding HasChestLog, Converter={StaticResource BoolToVisibility}}">
+                        <CheckBox Style="{StaticResource ToggleChip}" Content="{l:T OnlyDebtors}" IsChecked="{Binding OnlyDebtors}" />
+                    </Border>
+                    <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6">
+                        <ItemsControl ItemsSource="{Binding ChestTiers}" ItemsPanel="{StaticResource RowItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                    <Border Style="{StaticResource SegmentBox}" Margin="0,0,6,6">
+                        <ItemsControl ItemsSource="{Binding ChestKinds}" ItemsPanel="{StaticResource RowItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Style="{StaticResource ToggleChip}" Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                </WrapPanel>
+                </StackPanel>
+
+                <!-- Nothing to show -->
+                <TextBlock Grid.Row="3" Style="{StaticResource Muted}" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,40,0,0"
+                           Text="{Binding ChestEmptyText}" Visibility="{Binding HasChestCards, Converter={StaticResource FalseToVisible}}" />
+
+                <!-- Players -->
+                <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,8,0,0"
+                        Visibility="{Binding HasChestCards, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="12,10,20,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="84" />
+                                    <ColumnDefinition Width="84" />
+                                    <ColumnDefinition Width="84" />
+                                    <ColumnDefinition Width="84" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="1" Style="{StaticResource Label}" Text="{l:T ColPlayer}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" Text="{l:T ColPicked}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="3" Style="{StaticResource Label}" Text="{l:T ColKept}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="4" Style="{StaticResource Label}" Text="{l:T ColMissingShort}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="5" Style="{StaticResource Label}" Text="{l:T ColDied}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding ChestCards}" ItemTemplate="{StaticResource PlayerRow}"
+                                      VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" ScrollViewer.CanContentScroll="True">
+                            <ItemsControl.Template>
+                                <ControlTemplate TargetType="ItemsControl">
+                                    <ScrollViewer CanContentScroll="True" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </ControlTemplate>
+                            </ItemsControl.Template>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+            </Grid>
         </Grid>
-    </Grid>
+    </DockPanel>
 </UserControl>

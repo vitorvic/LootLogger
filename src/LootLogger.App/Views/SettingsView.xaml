@@ -35,10 +35,10 @@
                         </Border>
                         <Border Style="{StaticResource SettingLine}">
                             <DockPanel>
-                                <Border DockPanel.Dock="Right" VerticalAlignment="Center" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                                <Border DockPanel.Dock="Right" Style="{StaticResource SegmentBox}">
                                     <StackPanel Orientation="Horizontal">
-                                        <RadioButton Style="{StaticResource SegmentButton}" GroupName="Language" Content="Português" IsChecked="{Binding IsPortuguese}" />
-                                        <RadioButton Style="{StaticResource SegmentButton}" GroupName="Language" Content="English" IsChecked="{Binding IsPortuguese, Converter={StaticResource Not}}" />
+                                        <RadioButton Style="{StaticResource FilterChip}" GroupName="Language" Content="Português" IsChecked="{Binding IsPortuguese}" />
+                                        <RadioButton Style="{StaticResource FilterChip}" GroupName="Language" Content="English" IsChecked="{Binding IsPortuguese, Converter={StaticResource Not}}" />
                                     </StackPanel>
                                 </Border>
                                 <StackPanel>

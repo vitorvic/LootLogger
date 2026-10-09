@@ -41,6 +41,26 @@ public partial class ChestView : UserControl
         }
     }
 
+    /// <summary>Clicking an item picture writes its name under the player's items; clicking it again hides it.</summary>
+    private void OnTileClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ItemTile tile } element)
+        {
+            return;
+        }
+
+        DependencyObject? parent = element;
+        while (parent is not null && (parent is not FrameworkElement fe || fe.DataContext is not ChestCard))
+        {
+            parent = VisualTreeHelper.GetParent(parent);
+        }
+
+        if (parent is FrameworkElement { DataContext: ChestCard card })
+        {
+            card.SelectedItemText = card.SelectedItemText == tile.ToolTip ? string.Empty : tile.ToolTip;
+        }
+    }
+
     private void ResetOutline()
     {
         if (_outline is not null)

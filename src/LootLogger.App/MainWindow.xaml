@@ -9,6 +9,7 @@
         Icon="pack://application:,,,/Assets/icon.ico"
         Background="{StaticResource BgBrush}" Foreground="{StaticResource FgBrush}"
         FontFamily="{StaticResource AppFont}" FontSize="13"
+        Typography.NumeralAlignment="Tabular"
         TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="ClearType"
         WindowStyle="None" ResizeMode="CanResize"
@@ -92,7 +93,7 @@
 
             <!-- Menu tabs -->
             <DockPanel Grid.Row="1" Margin="16,12,16,0">
-                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center"
+                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Muted}" FontSize="11.5" VerticalAlignment="Center"
                            FontFamily="{StaticResource MonoFont}" Text="{Binding Version, StringFormat=v{0}}" />
                 <Border HorizontalAlignment="Left" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}"
                         BorderThickness="1" CornerRadius="10" Padding="3">

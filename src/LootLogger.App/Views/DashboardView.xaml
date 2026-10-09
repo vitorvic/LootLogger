@@ -13,7 +13,12 @@
         <!-- Title, party and actions -->
         <DockPanel Grid.Row="0">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="{l:T ExportCsv}" Command="{Binding ExportCsvCommand}" Margin="0,0,8,0" />
+                <Button Command="{Binding ExportCsvCommand}" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource LineIcon}" Data="{StaticResource IconDownload}" Stroke="{StaticResource FgBrush}" Margin="0,0,7,0" />
+                        <TextBlock Text="{l:T ExportCsv}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
                 <Button Content="{l:T NewSession}" Command="{Binding NewSessionCommand}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">

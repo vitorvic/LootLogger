@@ -67,11 +67,13 @@
                     <RadioButton Style="{StaticResource SegmentButton}" GroupName="LootTab" Content="{l:T TabStats}" IsChecked="{Binding ShowLootStats}" />
                 </StackPanel>
             </Border>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
-                        Visibility="{Binding ShowLootStats, Converter={StaticResource FalseToVisible}}">
+            <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Visibility="{Binding ShowLootStats, Converter={StaticResource FalseToVisible}}">
                 <Grid Width="200" Margin="0,0,4,0">
-                    <TextBox x:Name="Search" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Text="{l:T SearchHint}" Foreground="{StaticResource MutedBrush}" Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                    <TextBox x:Name="Search" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Padding="28,5,8,5" />
+                    <Path Style="{StaticResource LineIcon}" Data="{StaticResource IconSearch}" Stroke="{StaticResource MutedBrush}"
+                          HorizontalAlignment="Left" Margin="10,0,0,0" IsHitTestVisible="False" />
+                    <TextBlock Text="{l:T SearchHint}" Foreground="{StaticResource MutedBrush}" Margin="30,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                Visibility="{Binding Text, ElementName=Search, Converter={StaticResource FalseToVisible}}" />
                 </Grid>
                 <Border Style="{StaticResource SegmentBox}" Margin="6,0,0,0">
@@ -84,9 +86,14 @@
                                      IsChecked="{Binding LootFilter, Converter={StaticResource Equals}, ConverterParameter=MyGuild}" />
                     </StackPanel>
                 </Border>
-                <Button Content="{l:T ExportCsv}" Command="{Binding ExportCsvCommand}" Margin="10,0,0,0" />
+                <Button Command="{Binding ExportCsvCommand}" Margin="10,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource LineIcon}" Data="{StaticResource IconDownload}" Stroke="{StaticResource FgBrush}" Margin="0,0,7,0" />
+                        <TextBlock Text="{l:T ExportCsv}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
                 <Button Content="{l:T NewSession}" Command="{Binding NewSessionCommand}" Margin="8,0,0,0" />
-            </StackPanel>
+            </WrapPanel>
         </DockPanel>
 
         <!-- List -->

@@ -141,6 +141,23 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <!-- Line icons, 14 px, drawn with Stroke -->
+    <StreamGeometry x:Key="IconDownload">M7,1.5 L7,9.5 M3.5,6 L7,9.5 L10.5,6 M2,12.5 L12,12.5</StreamGeometry>
+    <GeometryGroup x:Key="IconSearch">
+        <EllipseGeometry Center="6,6" RadiusX="4.5" RadiusY="4.5" />
+        <LineGeometry StartPoint="9.4,9.4" EndPoint="12.8,12.8" />
+    </GeometryGroup>
+    <Style x:Key="LineIcon" TargetType="Path">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="Stretch" Value="None" />
+        <Setter Property="StrokeThickness" Value="1.6" />
+        <Setter Property="StrokeStartLineCap" Value="Round" />
+        <Setter Property="StrokeEndLineCap" Value="Round" />
+        <Setter Property="StrokeLineJoin" Value="Round" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
     <!-- Buttons -->
     <Style x:Key="BaseButton" TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource FgBrush}" />

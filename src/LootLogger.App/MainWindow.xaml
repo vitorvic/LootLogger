@@ -103,6 +103,8 @@
                                      IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.LootLog}}" />
                         <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavChest}"
                                      IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Chest}}" />
+                        <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavDamage}"
+                                     IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Damage}}" />
                         <Border Width="1" Height="16" Margin="6,0" Background="{StaticResource LineBrush}" VerticalAlignment="Center" />
                         <RadioButton Style="{StaticResource NavButton}" GroupName="Nav" Content="{l:T NavSettings}"
                                      IsChecked="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Settings}}" />
@@ -124,6 +126,7 @@
                     <views:DashboardView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Dashboard}}" />
                     <views:LootLogView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.LootLog}}" />
                     <views:ChestView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Chest}}" />
+                    <views:DamageView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Damage}}" />
                     <views:SettingsView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Settings}}" />
                     <views:InfoView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.Help}}" Mode="Help" />
                     <views:InfoView Visibility="{Binding Page, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:Page.About}}" Mode="About" />

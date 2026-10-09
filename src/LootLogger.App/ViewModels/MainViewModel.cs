@@ -21,6 +21,7 @@ public enum Page
     Dashboard,
     LootLog,
     Chest,
+    Damage,
     Settings,
     Help,
     About
@@ -47,6 +48,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         LootView = CollectionViewSource.GetDefaultView(LootRows);
         LootView.Filter = FilterLoot;
         InitChest();
+        InitDamage();
 
         _service.Tracker.PartyOnly = settings.PartyOnly;
         _service.Tracker.LootAdded += e => _dispatcher.BeginInvoke(() => OnLoot(e));
@@ -340,6 +342,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             RefreshLootStats();
         }
+
+        if (Page == Page.Damage)
+        {
+            RefreshDamage();
+        }
     }
 
     private void Relocalize()
@@ -355,6 +362,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _lootStatsDirty = true;
         UpdateParty();
         RecomputeChest();
+        RelocalizeDamage();
         RefreshTiles();
     }
 

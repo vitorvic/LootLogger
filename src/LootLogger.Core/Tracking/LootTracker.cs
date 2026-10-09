@@ -71,6 +71,22 @@ public sealed class LootTracker
         }
     }
 
+    /// <summary>Name of the player with this object id on the current map, when it is us or someone in our party.</summary>
+    public string? PartyMemberName(long objectId)
+    {
+        lock (_lock)
+        {
+            if (!_playersByObjectId.TryGetValue(objectId, out var player))
+            {
+                return null;
+            }
+
+            return IsInParty(player.Name) || string.Equals(player.Name, LocalPlayer?.Name, StringComparison.OrdinalIgnoreCase)
+                ? player.Name
+                : null;
+        }
+    }
+
     public void Handle(GameMessage message)
     {
         List<Action> notifications = [];

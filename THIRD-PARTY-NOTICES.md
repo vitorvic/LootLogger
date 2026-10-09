@@ -1,6 +1,6 @@
 # Créditos e licenças de terceiros
 
-- **AlbionOnline-StatisticsAnalysis** (Triky313), GPL-3.0. O leitor do protocolo Photon/Protocol18 em `src/LootLogger.Protocol` foi adaptado dele, e os códigos de eventos e parâmetros vêm dele. https://github.com/Triky313/AlbionOnline-StatisticsAnalysis
+- **AlbionOnline-StatisticsAnalysis** (Triky313), GPL-3.0. O leitor do protocolo Photon/Protocol18 em `src/LootLogger.Protocol` foi adaptado dele, e os códigos de eventos e parâmetros vêm dele, inclusive os do medidor de dano (aba Dano). https://github.com/Triky313/AlbionOnline-StatisticsAnalysis
 - **SharpPcap**, MIT. https://github.com/dotpcap/sharppcap
 - **PacketDotNet**, MPL-2.0. https://github.com/dotpcap/packetnet
 - **CommunityToolkit.Mvvm**, MIT. https://github.com/CommunityToolkit/dotnet

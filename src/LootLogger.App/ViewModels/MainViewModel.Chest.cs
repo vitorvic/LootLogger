@@ -114,6 +114,11 @@ public sealed partial class MainViewModel
         {
             RefreshLootSources();
         }
+
+        if (value == Page.Damage)
+        {
+            RefreshDamage();
+        }
     }
 
     // ---------- Loot logs ----------

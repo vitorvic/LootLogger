@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
 using LootLogger.Capture;
+using LootLogger.Core.Combat;
 using LootLogger.Core.Data;
 using LootLogger.Core.Network;
 using LootLogger.Core.Protocol;
@@ -35,10 +36,14 @@ public sealed class CaptureService : IDisposable
         Values = MarketValueCache.Load(AppPaths.MarketValues);
         Tracker = new LootTracker(Codes, Items, Clusters, Values);
 
+        Damage = new DamageMeter(Codes, Tracker.PartyMemberName, () => Tracker.ClusterName, () => Tracker.LocalPlayer?.Name);
+
+        // The tracker goes first so the meter already knows who a new player or map is.
         _parser.MessageReceived += Tracker.Handle;
+        _parser.MessageReceived += Damage.Handle;
         _capture.PayloadReceived += OnPayload;
         _capture.GameTrafficDetected += () => GameTrafficDetected?.Invoke();
-        _capture.ServerAddressChanged += address => ServerChanged?.Invoke(GameServers.RegionOf(address));
+        _capture.ServerAddressChanged += OnServerAddress;
     }
 
     public event Action? GameTrafficDetected;
@@ -50,6 +55,7 @@ public sealed class CaptureService : IDisposable
     public ClusterDatabase Clusters { get; }
     public MarketValueCache Values { get; }
     public LootTracker Tracker { get; }
+    public DamageMeter Damage { get; }
 
     public bool IsRunning => _capture.IsRunning;
 
@@ -89,6 +95,18 @@ public sealed class CaptureService : IDisposable
     {
         _capture.Dispose();
         SaveValues();
+    }
+
+    // The game talks to the main server and the map server at once, so packets alternate between
+    // two addresses. An address we don't know must not wipe a region we already found, or the
+    // title bar flickers several times a second.
+    private void OnServerAddress(uint address)
+    {
+        var region = GameServers.RegionOf(address);
+        if (region != ServerRegion.Unknown)
+        {
+            ServerChanged?.Invoke(region);
+        }
     }
 
     private void OnPayload(byte[] payload, bool fromServer)

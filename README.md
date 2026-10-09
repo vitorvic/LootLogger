@@ -7,6 +7,7 @@ Loot logger para Albion Online, para qualquer jogador ou guild. Lê o tráfego d
 - **Painel**: itens capturados, última hora, tempo ativo, valor estimado e eventos recentes.
 - **Loot Log**: tabela com busca, filtros e estatísticas.
 - **Comparar Baú**: junte os logs de várias pessoas, cole o log do baú da guild e veja quem guardou, quem está devendo e quem morreu com o item.
+- **Dano**: medidor de dano da sua party (ou só seu): dano, DPS, cura, HPS e dano recebido, destaques, seus números e lutas salvas.
 - **Configurações**: Modo Party e português/inglês.
 - **Exportar CSV** no mesmo formato que as guilds já usam. Cada sessão também é salva sozinha, linha por linha.
 
@@ -29,6 +30,7 @@ Testes: `dotnet test` na pasta do projeto.
 
 - Configurações, lista de itens e gravações: `%AppData%\LootLogger`
 - Sessões exportadas: `Documentos\LootLogger\Sessões` (dá para trocar em Configurações)
+- Lutas salvas do medidor de dano: `%AppData%\LootLogger\lutas-salvas.json`
 - Erros inesperados: `%AppData%\LootLogger\erros.log`
 
 ## Quando o jogo atualizar

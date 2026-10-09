@@ -9,6 +9,10 @@ public sealed class AppSettings
     public string Language { get; set; } = "pt-BR";
     public bool PartyOnly { get; set; }
     public string ExportFolder { get; set; } = AppPaths.DefaultExportFolder;
+    public bool DamageResetOnMap { get; set; } = true;
+    public bool DamageResetBeforeCombat { get; set; }
+    public bool DamageSaveBeforeReset { get; set; } = true;
+    public bool DamageCopyShort { get; set; }
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 

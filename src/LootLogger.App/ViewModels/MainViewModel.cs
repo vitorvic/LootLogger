@@ -211,6 +211,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (dialog.ShowDialog() == true)
         {
             CsvExporter.Write(dialog.FileName, _session.Loot, _session.Kills);
+            WriteReadableSheet(Path.ChangeExtension(dialog.FileName, ".xlsx"));
             Message = L.Format("Exported", dialog.FileName);
 
             // The next export opens where this one was saved.
@@ -219,6 +220,35 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 SaveSetting(s => s.ExportFolder = folder);
             }
         }
+    }
+
+    /// <summary>Loot only, in plain columns, for people who open the export in Excel. The CSV is what guild tools read.</summary>
+    private void WriteReadableSheet(string path)
+    {
+        var labels = new XlsxExporter.Labels(L["XlsxSheet"], L["XlsxTime"], L["XlsxLootedBy"], L["XlsxGuild"], L["XlsxItem"],
+            L["XlsxQuantity"], L["XlsxLootedFrom"], L["XlsxFromGuild"], L["XlsxValue"], L["XlsxTotal"]);
+        try
+        {
+            XlsxExporter.Write(path, _session.Loot, labels, ItemNameWithTier, BodyName, TimeZoneInfo.Local);
+        }
+        catch (IOException)
+        {
+            // Open in Excel: the CSV, which tools need, was saved anyway.
+        }
+    }
+
+    private string BodyName(LootEntry entry) => entry.LootedFromName switch
+    {
+        LootTracker.MobName => L["Mob"],
+        LootTracker.ChestName => L["Chest"],
+        var name => name
+    };
+
+    private string ItemNameWithTier(LootEntry entry)
+    {
+        var item = _service.Items.Get(entry.ItemIndex);
+        var name = item?.NameFor(L.Language) ?? entry.ItemNameEnglish;
+        return item is { TierLabel.Length: > 0 } ? $"{name} {item.TierLabel}" : name;
     }
 
     [RelayCommand]

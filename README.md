@@ -10,7 +10,7 @@
 ![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)
 [![grátis, GPL-3.0](https://img.shields.io/badge/gr%C3%A1tis-GPL--3.0-2ea44f)](LICENSE)
 
-<a href="https://github.com/vitorvic/LootLogger/releases/latest/download/LootLogger-win-Setup.exe"><img src="docs/baixar.svg" width="260" alt="Baixar para Windows"></a>
+<a href="https://github.com/vitorvic/LootLogger/releases/latest/download/LootLogger-win-Setup.exe"><img src=".github/baixar.svg" width="260" alt="Baixar para Windows"></a>
 
 <sub>Baixa direto o instalador da versão mais nova.</sub>
 

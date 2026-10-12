@@ -74,3 +74,13 @@ jobs:
       - name: Upload release
         run: >-
           vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "LootLogger $($env:VERSION): $($env:SUMMARY)" --tag v${{ env.VERSION }} --token ${{ secrets.GITHUB_TOKEN }}
+
+      # The text above the file list: what changed and which file to download.
+      - name: Release text
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $notes = (Get-Content .github/release-notes.md -Raw -Encoding utf8).Replace('{{SUMMARY}}', $env:SUMMARY).Replace('{{VERSION}}', $env:VERSION)
+          Set-Content notes.md $notes -Encoding utf8
+          gh release edit "v$env:VERSION" --repo ${{ github.repository }} --notes-file notes.md

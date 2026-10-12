@@ -210,7 +210,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         if (dialog.ShowDialog() == true)
         {
-            CsvExporter.Write(dialog.FileName, _session.Loot, _session.Kills);
+            CsvExporter.Write(dialog.FileName, _session.Loot, _session.Kills, L["CsvDeaths"]);
             Message = L.Format("Exported", dialog.FileName);
 
             // The next export opens where this one was saved.

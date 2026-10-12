@@ -2,6 +2,7 @@ using System.Text;
 using LootLogger.Core.Chest;
 using LootLogger.Core.Data;
 using LootLogger.Core.Export;
+using LootLogger.Core.Import;
 using LootLogger.Core.Session;
 using LootLogger.Core.Tracking;
 
@@ -16,22 +17,24 @@ public class ExportAndChestTests
         by, "Take Care", "", 0, itemId, name, qty, "XAgiota", "PlVAS", "", value, "Sunfang Cliffs");
 
     [Fact]
-    public void Header_MatchesTheGuildFormat()
+    public void Header_HasTheGuildColumns_WithTheOnesPeopleReadFirst()
     {
-        // Header of the CSV the guild uses today.
+        // Header of the CSV the guild uses today. Its tools find each column by name, so only the order changes.
         const string reference = "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name;item_id;item_name;quantity;looted_from__alliance;looted_from__guild;looted_from__name;died;died_player_guild;killed_by;killed_by_guild;average_est_market_value;cluster";
-        Assert.Equal(reference, CsvExporter.Header);
+        var header = CsvExporter.Header.Split(';');
+        Assert.Equal(reference.Split(';').Order(), header.Order());
+        Assert.Equal(["timestamp_utc", "looted_by__name", "item_name", "quantity", "average_est_market_value", "looted_from__name", "looted_from__guild"], header[..7]);
     }
 
     [Fact]
-    public void LootRow_HasSixteenColumnsInTheGuildLayout()
+    public void LootRow_HasSixteenColumnsInTheHeaderOrder()
     {
         var entry = new LootEntry(new DateTime(2026, 10, 6, 2, 49, 41, DateTimeKind.Utc).AddTicks(6627237),
             "Pandas139", "Take Care", "", 0, "T6_HEAD_LEATHER_SET3@2", "Master's Assassin Hood", 1,
             "XAgiota", "PlVAS", "", 134608, "Sunfang Cliffs");
 
         Assert.Equal(
-            "2026-10-06T02:49:41.6627237Z;;Take Care;Pandas139;T6_HEAD_LEATHER_SET3@2;Master's Assassin Hood;1;;PlVAS;XAgiota;;;;;134608;Sunfang Cliffs",
+            "2026-10-06T02:49:41.6627237Z;Pandas139;Master's Assassin Hood;1;134608;XAgiota;PlVAS;Take Care;;T6_HEAD_LEATHER_SET3@2;;Sunfang Cliffs;;;;",
             CsvExporter.LootRow(entry));
     }
 
@@ -41,9 +44,9 @@ public class ExportAndChestTests
         var kill = new KillEntry(new DateTime(2026, 10, 6, 3, 0, 0, DateTimeKind.Utc), "XAgiota", "PlVAS", "", "Pandas139", "Take Care", "", "Sunfang Cliffs");
         var columns = CsvExporter.KillRow(kill).Split(';');
         Assert.Equal(16, columns.Length);
-        Assert.Equal(["XAgiota", "PlVAS", "Pandas139", "Take Care"], columns[10..14]);
-        Assert.Equal("", columns[14]);
-        Assert.Equal("Sunfang Cliffs", columns[15]);
+        Assert.Equal(["XAgiota", "PlVAS", "Pandas139", "Take Care"], columns[12..]);
+        Assert.All(columns[1..11], c => Assert.Equal("", c));
+        Assert.Equal("Sunfang Cliffs", columns[11]);
     }
 
     [Fact]
@@ -54,17 +57,41 @@ public class ExportAndChestTests
         {
             var later = new LootEntry(new DateTime(2026, 10, 6, 3, 0, 0, DateTimeKind.Utc), "B", "", "", 0, "X", "X", 1, "", "", "", 0, "");
             var earlier = later with { UtcTime = later.UtcTime.AddMinutes(-5), LootedByName = "A" };
-            CsvExporter.Write(path, [later, earlier], []);
+            CsvExporter.Write(path, [later, earlier], [], "MORTES");
 
             var bytes = File.ReadAllBytes(path);
             Assert.Equal(new byte[] { 0xEF, 0xBB, 0xBF }, bytes[..3]);
             var lines = Encoding.UTF8.GetString(bytes[3..]).Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
             Assert.Equal(3, lines.Length);
-            Assert.Equal("A", lines[1].Split(';')[3]);
+            Assert.Equal("A", lines[1].Split(';')[1]);
         }
         finally
         {
             File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Export_PutsTheDeathsAfterTheLoot_UnderTheirTitle()
+    {
+        var first = Loot("NillBlack", "T6_BAG", "Adept's Bag", 1, 1000, second: 10);
+        var last = Loot("Pandas139", "T5_CAPE", "Expert's Cape", 1, 2000, second: 50);
+        var death = new KillEntry(first.UtcTime.AddSeconds(20), "XAgiota", "PlVAS", "", "NillBlack", "Take Care", "", "Sunfang Cliffs");
+
+        var text = CsvExporter.ToExportCsv([last, first], [death], "MORTES");
+
+        var lines = text.Split("\r\n");
+        Assert.Equal(
+            [CsvExporter.Header, CsvExporter.LootRow(first), CsvExporter.LootRow(last), "", "MORTES", CsvExporter.KillRow(death), ""],
+            lines);
+
+        // Comparar Baú skips the blank line and the title, also after Excel saves them as ";;;" (the site does too).
+        var resaved = string.Join("\r\n", lines.Select(l => l.Contains(';') ? l : l + new string(';', 15)));
+        foreach (var file in new[] { text, resaved })
+        {
+            var (loot, kills) = LootFile.ParseAll(file);
+            Assert.Equal([first, last], loot);
+            Assert.Equal(death, Assert.Single(kills));
         }
     }
 

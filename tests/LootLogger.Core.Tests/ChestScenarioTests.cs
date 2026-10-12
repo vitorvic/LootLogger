@@ -337,6 +337,81 @@ public class ChestScenarioTests
     }
 
     [Fact]
+    public void Death_BodyLootedLongAfter_IsStillTheSameDeath()
+    {
+        // 2026-10-11: NillBlack died, came back and looted; 12 minutes later someone took the Memento from his old body.
+        var loot = new[] { Pick("Ana", "T6_BAG", minutes: 10), Pick("Bia", "UNIQUE_FURNITUREITEM_KILLTROPHY_OPENWORLD_SMALL", minutes: 15, from: "Ana") };
+
+        var ana = Result("Ana", loot, [], [Death("Ana", 5)]);
+
+        Assert.Equal((1, 0), (ana.MissingCount, ana.LostCount));
+    }
+
+    [Fact]
+    public void Death_SameGearTakenFromTheBodyAgain_IsANewDeath()
+    {
+        // 2026-10-11: SkiLL0s's helmet was taken from his body at 22:14 and again at 22:22, a death the app did not see.
+        var loot = new[]
+        {
+            Pick("Bia", "T6_HEAD_PLATE_SET1", minutes: 1, from: "Ana"),
+            Pick("Ana", "T6_BAG", minutes: 4),
+            Pick("Caio", "T6_HEAD_PLATE_SET1", minutes: 9, from: "Ana"),
+        };
+
+        var ana = Result("Ana", loot, [], [Death("Ana", 0)]);
+
+        Assert.Equal((0, 1), (ana.MissingCount, ana.LostCount));
+        Assert.Equal(Fight.AddMinutes(9), ana.Death!.UtcTime);
+    }
+
+    [Fact]
+    public void Death_GearPickedUpAfterDying_TakenFromTheBody_IsANewDeath()
+    {
+        var loot = new[] { Pick("Ana", "T5_CAPE", minutes: 4), Pick("Bia", "T5_CAPE", minutes: 9, from: "Ana") };
+
+        var ana = Result("Ana", loot, [], [Death("Ana", 0)]);
+
+        Assert.Equal((0, 1), (ana.MissingCount, ana.LostCount));
+    }
+
+    [Fact]
+    public void Death_GearThePlayerAlsoLooted_ProvesNothing()
+    {
+        // 2026-10-11: DiversityWoman carried a looted Swiftclaw besides her own, and the two were taken minutes apart.
+        var loot = new[]
+        {
+            Pick("Ana", "T5_MOUNT_COUGAR_KEEPER@1"),
+            Pick("Bia", "T5_MOUNT_COUGAR_KEEPER@1", minutes: 5, from: "Ana"),
+            Pick("Ana", "T6_BAG", minutes: 7),
+            Pick("Caio", "T5_MOUNT_COUGAR_KEEPER@1", minutes: 10, from: "Ana"),
+        };
+
+        var ana = Result("Ana", loot, []);
+
+        Assert.Equal("T6_BAG", Assert.Single(ana.Missing).ItemId);
+        Assert.Equal("T5_MOUNT_COUGAR_KEEPER@1", Assert.Single(ana.LostOnDeath).ItemId);
+        Assert.Equal(Fight.AddMinutes(5), ana.Death!.UtcTime);
+    }
+
+    [Fact]
+    public void Death_InFilesWithoutDeathRows_TwoBodiesAreTwoDeaths()
+    {
+        // Files from other loggers have no death rows: only the bodies show who died.
+        var loot = new[]
+        {
+            Pick("Bia", "T6_HEAD_PLATE_SET1", minutes: 1, from: "Ana"),
+            Pick("Ana", "T6_BAG", minutes: 4),
+            Pick("Caio", "T6_HEAD_PLATE_SET1", minutes: 9, from: "Ana"),
+            Pick("Ana", "T5_CAPE", minutes: 12),
+        };
+
+        var ana = Result("Ana", loot, []);
+
+        Assert.Equal("T5_CAPE", Assert.Single(ana.Missing).ItemId);
+        Assert.Equal("T6_BAG", Assert.Single(ana.LostOnDeath).ItemId);
+    }
+
+    [Fact]
     public void FightPastMidnight_IsStillOneFight()
     {
         var late = Fight.Date.AddHours(23).AddMinutes(55);

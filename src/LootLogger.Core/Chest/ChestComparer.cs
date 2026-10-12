@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using LootLogger.Core.Data;
 using LootLogger.Core.Tracking;
 
@@ -189,10 +190,11 @@ public static class ChestComparer
         IEnumerable<LootEntry> loot, IEnumerable<ChestLogEntry> chest, ItemDatabase items, IEnumerable<KillEntry>? kills = null)
     {
         var lootList = loot as IReadOnlyCollection<LootEntry> ?? loot.ToList();
-        var deaths = (kills ?? []).Concat(DeathsFromBodies(lootList)).ToList();
+        var rows = (kills ?? []).ToList();
 
         // Several fights can be compared at once (a whole week, say): a death only covers what was picked up in its own fight.
-        var fightStarts = FightStarts(lootList.Select(l => l.UtcTime).Concat(deaths.Select(k => k.UtcTime)));
+        var fightStarts = FightStarts(lootList.Select(l => l.UtcTime).Concat(rows.Select(k => k.UtcTime)));
+        var deaths = rows.Concat(DeathsFromBodies(lootList, rows, fightStarts)).ToList();
         var lastDeath = deaths
             .GroupBy(k => k.Died, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(
@@ -337,27 +339,96 @@ public static class ChestComparer
     }
 
     /// <summary>
-    /// Logs without death rows still show deaths: someone looting a player's body means that player died.
-    /// Each run of body loot is one death, placed at its first pickup.
+    /// Logs without death rows (files from other loggers have none) still show deaths: someone looting a player's body
+    /// means that player died. Body loot with no death of that player before it in the fight is one death, at its first pickup.
+    /// A body stays on the ground long after the death (on 2026-10-11 a Combat Memento was taken from one 12 minutes later),
+    /// so a later run of body loot is a new death only when it proves another body (<see cref="ProvesAnotherBody"/>).
     /// </summary>
-    private static IEnumerable<KillEntry> DeathsFromBodies(IEnumerable<LootEntry> loot)
+    private static List<KillEntry> DeathsFromBodies(IReadOnlyCollection<LootEntry> loot, IReadOnlyCollection<KillEntry> rows, List<DateTime> fightStarts)
     {
+        var pickupsBy = loot.GroupBy(l => l.LootedByName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+        var rowsOf = rows.GroupBy(k => k.Died, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Select(k => k.UtcTime).ToList(), StringComparer.OrdinalIgnoreCase);
+        var guessed = new List<KillEntry>();
+
         foreach (var body in loot
                      .Where(l => l.LootedFromName.Length > 0 && l.LootedFromName != LootTracker.MobName && l.LootedFromName != LootTracker.ChestName)
                      .GroupBy(l => l.LootedFromName, StringComparer.OrdinalIgnoreCase))
         {
-            DateTime? last = null;
-            foreach (var entry in body.OrderBy(l => l.UtcTime))
+            foreach (var fight in body.GroupBy(l => FightOf(fightStarts, l.UtcTime)))
             {
-                if (last is null || entry.UtcTime - last.Value > DeathGap)
+                var own = (pickupsBy.GetValueOrDefault(body.Key) ?? []).Where(p => FightOf(fightStarts, p.UtcTime) == fight.Key).ToList();
+                var deathRows = new Queue<DateTime>((rowsOf.GetValueOrDefault(body.Key) ?? []).Where(t => FightOf(fightStarts, t) == fight.Key).Order());
+                DateTime? lastDeath = null;
+                var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var run = new List<LootEntry>();
+
+                // A run of body loot ends after a 2 minute pause or at a death row.
+                void EndRun()
                 {
-                    yield return new KillEntry(entry.UtcTime, body.Key, entry.LootedFromGuild, entry.LootedFromAlliance, string.Empty, string.Empty, string.Empty, entry.Cluster);
+                    if (run.Count == 0)
+                    {
+                        return;
+                    }
+
+                    if (lastDeath is null || ProvesAnotherBody(run, lastDeath.Value, own, taken))
+                    {
+                        var first = run[0];
+                        guessed.Add(new KillEntry(first.UtcTime, body.Key, first.LootedFromGuild, first.LootedFromAlliance, string.Empty, string.Empty, string.Empty, first.Cluster));
+                        lastDeath = first.UtcTime;
+                        taken.Clear();
+                    }
+
+                    taken.UnionWith(run.Where(l => IsGear(l.ItemId)).Select(l => l.ItemId));
+                    run.Clear();
                 }
 
-                last = entry.UtcTime;
+                foreach (var pickup in fight.OrderBy(l => l.UtcTime))
+                {
+                    while (deathRows.Count > 0 && deathRows.Peek() <= pickup.UtcTime)
+                    {
+                        EndRun();
+                        lastDeath = deathRows.Dequeue();
+                        taken.Clear();
+                    }
+
+                    if (run.Count > 0 && pickup.UtcTime - run[^1].UtcTime > DeathGap)
+                    {
+                        EndRun();
+                    }
+
+                    run.Add(pickup);
+                }
+
+                EndRun();
             }
         }
+
+        return guessed;
     }
+
+    /// <summary>
+    /// Whether a run of body loot after a death comes from a new body. It does when it has gear the player picked up
+    /// after that death (they carried it, so they died again), or gear already taken from the last body (a body has one
+    /// helmet), unless the player looted that same item and could have carried two. Mementos, potions and other stacks
+    /// prove nothing: every body has them. Tried on the 2026-10-07 to 2026-10-11 logs with their death rows taken out:
+    /// 13 of the 14 second deaths it found were real.
+    /// </summary>
+    private static bool ProvesAnotherBody(List<LootEntry> run, DateTime lastDeath, List<LootEntry> own, HashSet<string> taken)
+    {
+        var start = run[0].UtcTime;
+        return run.Where(l => IsGear(l.ItemId)).Any(l =>
+            own.Any(p => p.UtcTime > lastDeath && p.UtcTime < start && SameItem(p, l))
+            || (taken.Contains(l.ItemId) && !own.Any(p => SameItem(p, l))));
+
+        static bool SameItem(LootEntry a, LootEntry b) => string.Equals(a.ItemId, b.ItemId, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>What a body holds one of: weapon, off-hand, armor pieces, cape, bag, mount.</summary>
+    private static readonly Regex GearId = new(@"_(HEAD|ARMOR|SHOES|MAIN|2H|OFF|CAPE|CAPEITEM|BAG|MOUNT)(_|@|$)", RegexOptions.CultureInvariant);
+
+    private static bool IsGear(string itemId) => !itemId.StartsWith("UNIQUE_", StringComparison.OrdinalIgnoreCase) && GearId.IsMatch(itemId);
 
     /// <summary>The last death; a real death row (with the killer) wins over one guessed from body loot.</summary>
     private static KillEntry LatestDeath(IEnumerable<KillEntry> deaths)

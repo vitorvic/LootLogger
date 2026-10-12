@@ -1,4 +1,5 @@
 using LootLogger.Core.Data;
+using LootLogger.Core.Import;
 using LootLogger.Core.Session;
 using LootLogger.Core.Tracking;
 
@@ -134,8 +135,7 @@ public class ReservePriceTests
             Assert.True(session.Loot[0].IsReservePrice);
             var lines = File.ReadAllLines(session.AutosavePath!);
             Assert.Equal(3, lines.Length);
-            Assert.EndsWith(";2100000;Willowshade Icemarsh", lines[1]);
-            Assert.EndsWith(";3000;Willowshade Icemarsh", lines[2]);
+            Assert.Equal([2_100_000L, 3000L], LootFile.Read(session.AutosavePath!).Select(l => l.UnitValue));
         }
         finally
         {
